@@ -11,14 +11,85 @@
 
 ---
 
+## 最简单的方式：把下面这段复制给 Agent
+
+如果你在用 Claude Code / Codex / DeepSeek Harness 等 AI 编程工具，**不需要看后面的内容**，把下面整段复制给它就行：
+
+```text
+请帮我安装 moliai CLI 并配置好。按以下步骤执行：
+
+1. 判断我的系统（Windows / macOS / Linux）和架构
+2. 执行对应的一键安装命令：
+   - macOS / Linux：
+     curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
+   - Windows PowerShell：
+     irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
+3. 验证安装：moliai --version（应为 0.1.0）、moliai doctor（看 healthy 是否为 true）
+4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
+5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
+   moliai login key --base-url https://test-api.aidancevid.com/api
+   注意：目前只有测试环境可用，生产环境会返回 404。
+
+铁律：
+- 不要自动执行 moliai run 或其他会产生费用的命令
+- 任何一步失败就停下报告原始错误，不要跳过、不要换镜像源、不要从源码构建
+- 最后分三段汇报：安装状态 / Skill 状态 / 登录状态
+```
+
+**复制完等它跑完就行。** 后续所有命令见下方[命令清单](#命令清单)。
+
+### 不知道该选哪种方式？
+
+| 情况 | 怎么做 |
+|---|---|
+| 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh \| sh`（Windows 用 `irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 \| iex`） |
+| 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
+
+---
+
 ## 开始之前
 
 1. 打开 <https://aidancevid.com> 注册账号，并完成充值（生成任务消耗「魔力值」）
 2. 在网页上**新建一个项目**——CLI 没有 `project create`，项目只能在网页创建
 
-## 安装
+## 其他安装方式
 
-本 CLI 为闭源软件，源码不公开。请从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 下载对应平台的单文件可执行程序：
+### 一键脚本（推荐）
+
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
+```
+
+**Windows（PowerShell）**
+
+```powershell
+irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
+```
+
+脚本会：判断平台 → 下载对应版本 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 提示 PATH 配置 → 验证版本。
+
+> 不想执行远程脚本？可先下载审查内容：
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh -o install.sh
+> # 查看内容后再执行
+> sh install.sh
+> ```
+
+可用环境变量（sh 脚本）/ 参数（PowerShell 脚本）覆盖默认行为：
+
+| 变量 / 参数 | 默认值 | 说明 |
+|---|---|---|
+| `MOLIAI_VERSION` / `-Version` | `v0.1.0` | 要安装的版本（含 `v` 前缀） |
+| `MOLIAI_INSTALL_DIR` / `-InstallDir` | `~/.local/bin`（不可写时 `~/bin`）/ `%USERPROFILE%\bin` | 安装目录 |
+
+安装目录不在 `PATH` 时，脚本只**打印**需要追加的行，不会自动改动你的 shell 配置文件。
+
+### 手动下载
+
+如果一键安装失败，也可从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载对应平台的单文件可执行程序：
 
 | 平台 | 文件 |
 |---|---|

@@ -1,0 +1,48 @@
+Copyright (c) 2026 Mr-cjf. All rights reserved.
+
+PROPRIETARY SOFTWARE LICENSE
+
+This software and its accompanying materials (the "Software") are proprietary
+and are licensed, not sold, to you by the copyright holder.
+
+1. GRANT OF LICENSE
+
+   Subject to your compliance with this license and the applicable terms of
+   service of the MoliAi platform, you are granted a limited, non-exclusive,
+   non-transferable, revocable license to install and use the Software solely
+   for its intended purpose.
+
+2. RESTRICTIONS
+
+   You shall not:
+
+   (a) copy, modify, adapt, translate, or create derivative works of the Software;
+   (b) distribute, sublicense, sell, rent, lease, or otherwise transfer the Software;
+   (c) reverse engineer, decompile, disassemble, or otherwise attempt to derive
+       the source code of the Software, except to the extent permitted by
+       applicable law;
+   (d) remove or alter any proprietary notices, labels, or marks on the Software.
+
+3. THIRD-PARTY COMPONENTS
+
+   The Software includes third-party open-source components. See the NOTICE file
+   for their licenses and copyright notices. Those components remain governed by
+   their respective licenses.
+
+4. AGENT SKILL FILES
+
+   The files under the `skills/` directory are licensed separately under the MIT
+   License. See `skills/moliai-cli-skill/LICENSE`.
+
+5. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+6. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR
+   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+   ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OF
+   THE SOFTWARE.

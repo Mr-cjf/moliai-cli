@@ -1,0 +1,16 @@
+MoliAi CLI - Third-Party Notices
+
+This software includes the following third-party components, each governed by
+its own license. The proprietary license in the LICENSE file does not alter
+the terms of these licenses.
+
+----------------------------------------------------------------------
+commander
+License: MIT
+Copyright: Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
+Project: https://github.com/tj/commander.js
+----------------------------------------------------------------------
+
+Development-only dependencies (not included in distributed builds):
+  - typescript (Apache-2.0)
+  - @types/node (MIT)

@@ -1,0 +1,189 @@
+# 给 Agent 的 MoliAi CLI 安装说明
+
+本文件是给 **AI Agent** 读的操作手册。目标是装好 `moliai` CLI 与 Skill，并在用户提供凭据后确认后端连通。
+
+四条铁律，先读完再动手：
+
+1. **安装完成 ≠ 登录成功**。装好 CLI 只代表可执行文件存在，认证是独立的第二件事。
+2. **不得自动提交收费生成任务**。`moliai run` 会扣减用户的魔力值。没有用户明确指令，只允许 `--dry-run`。
+3. **不能自造凭据**。KEY 与 baseUrl 必须由用户提供。不要猜、不要从别处复制、不要尝试默认值。
+4. **不猜、不跳过、不自动重试**。失败就报告失败与错误码，把决定权交回用户。
+
+---
+
+## 1. 环境检查
+
+先确认平台与架构：
+
+```bash
+# Linux / macOS
+uname -sm
+```
+
+```powershell
+# Windows
+[System.Environment]::Is64BitOperatingSystem
+```
+
+按结果选择对应的 Release 文件：
+
+| 平台 | 文件 |
+|---|---|
+| Windows x64 | `moliai-windows-x64.exe` |
+| macOS (Apple Silicon) | `moliai-darwin-arm64` |
+| macOS (Intel) | `moliai-darwin-x64` |
+| Linux x64 | `moliai-linux-x64` |
+
+平台不在上表内（如 Windows ARM、Linux ARM、32 位系统）→ **停止**，告知用户当前没有对应的官方构建，不要尝试交叉运行或模拟层。
+
+## 2. 安装 CLI
+
+CLI 是闭源软件，源码不公开，以单文件可执行程序分发。安装方式是从 Releases 下载：
+
+```bash
+# 以 macOS Apple Silicon 为例，替换为实际平台对应文件
+curl -L -o moliai https://github.com/Mr-cjf/moliai-cli/releases/latest/download/moliai-darwin-arm64
+chmod +x moliai
+```
+
+```powershell
+# Windows 示例
+Invoke-WebRequest -Uri "https://github.com/Mr-cjf/moliai-cli/releases/latest/download/moliai-windows-x64.exe" -OutFile "moliai.exe"
+```
+
+安装位置由用户决定（`/usr/local/bin`、`~/.local/bin` 或任意加入 `PATH` 的目录）。**不要**在未获用户同意时写入系统目录。
+
+可选的完整性校验：
+
+```bash
+curl -L -O https://github.com/Mr-cjf/moliai-cli/releases/latest/download/SHA256SUMS.txt
+sha256sum -c SHA256SUMS.txt
+```
+
+校验失败 → **停止并报告**，不要继续执行该文件。
+
+**未签名提示**：Windows SmartScreen 可能拦截，macOS 可能提示「无法验证开发者」。这需要用户亲自确认，不要让用户关闭系统安全设置：
+
+- Windows：点「更多信息」→「仍要运行」
+- macOS：`xattr -dr com.apple.quarantine ./moliai`，或在「系统设置 → 隐私与安全性」中点「仍要打开」
+
+## 3. 验证安装
+
+```bash
+moliai --version    # 应输出 0.1.0
+moliai help         # 应列出命令树
+moliai doctor       # 本机自检，恒以退出码 0 结束，看 data.healthy
+```
+
+`doctor` 的结论要看 `data.checks` 里是否有 `fail`，而不是只看退出码。
+
+## 4. 安装 Skill
+
+```bash
+moliai setup --agent all --dry-run   # 先看计划，不落盘
+moliai setup --agent all             # 实际写入
+moliai setup --agent all --check     # 复核
+```
+
+默认写入两个位置：
+
+- `~/.agents/skills/moliai-cli-skill`（Codex / dsh / 通用宿主）
+- `~/.claude/skills/moliai-cli-skill`（Claude Code）
+
+只装给某一类宿主：`--agent claude` / `--agent codex` / `--agent dsh` / `--agent generic`。
+
+安装后需要**重启宿主会话**新 Skill 才会生效——请如实告知用户这一步。
+
+若宿主不是上述任一类型，把 `moliai setup` 的输出原样报告，不要假装装好了。
+
+基于 Skills CLI 的替代方式（宿主支持 Skill 目录时同样可用）：
+
+```bash
+npx skills add Mr-cjf/moliai-cli --skill moliai-cli-skill -g
+```
+
+## 5. 配置与登录
+
+**这一步必须由用户提供两项信息，Agent 不能自己填：**
+
+| 需要的信息 | 来源 |
+|---|---|
+| `baseUrl` | 用户提供。生产环境通常是 `https://dance.aidancevid.com/api`，测试环境通常是 `https://test-api.aidancevid.com/api` |
+| KEY | 用户在网页 **API 配置 → 开发者配置** 中复制 |
+
+登录方式：让用户**自己**把 KEY 输入到 stdin，不要让用户把 KEY 贴在对话里（会留在会话记录中）。
+
+```bash
+moliai login key --base-url "<用户提供的 baseUrl>"
+# 交互式等待粘贴 KEY，回车后读取
+```
+
+如果环境无法交互输入，请让用户在本机终端自己执行这条命令，再回来告诉你结果。
+
+说明给用户的风险：这个 KEY 等同于账号全权限（可建/删画布、提交生成并扣费），且无过期时间。KEY 本身不落盘。
+
+### 5.1 多环境时先确认当前环境
+
+本机可能同时保存了测试与生产两套凭据。**登录后、做任何有副作用的操作前**，先跑 `moliai env` 确认：
+
+- `data.current` 是**本次调用实际会用的环境**（已把 `--base-url` 与 `MOLIAI_BASE_URL` 算进去）
+- `data.default` 是什么都不指定时的默认环境，可能与 `current` 不同
+- 每条环境的 `expired: true` 表示该环境令牌已过期，需要用户重新登录该环境
+
+规则：
+
+- 环境不对时**不要自己改默认环境**——先向用户确认目标环境，再由用户决定是否执行 `moliai env use <url>`
+- 只想临时换环境，用全局参数而不是改默认：`moliai project list --base-url "<url>"`
+- 报 `MOLIAI_NOT_BOUND` 且 `hint` 指向 `moliai login key --base-url <url>` → 该环境没登录过，让用户提供该环境的 KEY，不要复用另一个环境的凭证
+- 不要执行 `moliai logout`（会删掉**所有**环境的凭据）；只清理单个环境用 `moliai env remove <url>`，且必须经用户同意
+
+## 6. 联通验证
+
+按顺序执行，**任何一步失败就停在该步并报告**：
+
+```bash
+moliai env           # 先确认当前环境是否正确
+moliai status        # 看 baseUrl / authenticated / connectivity.ok
+moliai whoami        # 看 authenticated 与 userId
+moliai project list  # 只读接口，验证鉴权链路真的通
+```
+
+判定标准：
+
+- `status.data.authenticated === true` 且 `status.data.connectivity.ok === true` → 后端连通正常
+- `status.data.connectivity.error` 有值 → 按错误码定位：
+  - `MOLIAI_AUTH_REQUIRED` / `MOLIAI_TOKEN_EXPIRED` → 凭据无效或过期，回到第 5 步
+  - `MOLIAI_NOT_BOUND` → 当前环境没有可用凭据（没登录过，或默认环境被删了）；用 `moliai env` 看现状，再让用户提供该环境的 KEY
+  - `MOLIAI_NETWORK_ERROR` → 网络/DNS/地址错误，确认 `baseUrl` 是否写全（含 `/api`）
+- `project list` 返回空数组是合法结果（账号还没有项目），不代表未授权；未授权会返回 `MOLIAI_AUTH_REQUIRED`
+
+## 7. 报告格式
+
+安装结束后按四个状态分别报告，不要合并成一句「安装成功」：
+
+| 状态 | 取值 | 依据 |
+|---|---|---|
+| CLI 安装 | 成功 / 失败 | `moliai --version` 实际输出 |
+| Skill 安装 | 成功 / 失败 / 未执行 | `moliai setup --check` 结果 |
+| 登录 | 成功 / 失败 / 未执行 | `moliai whoami` 的 `authenticated` |
+| 后端连通 | 正常 / 异常（附错误码） | `moliai status` 的 `connectivity.ok` |
+
+报告里可以带 traceId，**绝不能带 KEY 或令牌**。
+
+## 8. 失败处理
+
+- 不猜原因：先读 stderr 错误信封的 `error.code` 与 `error.hint`，再决定动作
+- 不跳过失败步骤继续往下走
+- **不自动重试收费操作**：`run` 失败后不要换模型、不要改参数、不要降分辨率重试；把失败原因与 `jobId` / `taskId` 报给用户
+- 网络类错误（`MOLIAI_NETWORK_ERROR` / `MOLIAI_RATE_LIMITED`）可以有限次退避重试，其余错误一律不重试
+- 遇到未登记的错误码直接停止并说明，不要兜底
+
+## 9. 装好之后
+
+- 只读探索：`moliai project list` → `moliai canvas list -w <projectId>` → `moliai node list`
+- 看模型与参数：`moliai model list` / `moliai model <modelKey>`
+- 生成预演（零成本）：`moliai run <node> --dry-run --model <k> --prompt "<p>"`
+- 真实提交需要用户明确同意，并先展示 `--dry-run` 的 `estimatedCost` 与 `warnings`
+- 长任务用 `moliai wait <jobId> --max 60` 分轮等待，不要提高 `--wait` 硬等
+
+详细命令与成本规则见随包安装的 Skill，以及 `moliai help --json`。

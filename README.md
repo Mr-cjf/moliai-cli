@@ -69,14 +69,10 @@ curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh |
 irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
 ```
 
-脚本会：判断平台 → 下载对应版本 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 提示 PATH 配置 → 验证版本。
+脚本会：判断平台 → 下载对应版本 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 验证版本。
 
-> 不想执行远程脚本？可先下载审查内容：
-> ```bash
-> curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh -o install.sh
-> # 查看内容后再执行
-> sh install.sh
-> ```
+- macOS / Linux：安装目录不在 `PATH` 时脚本只**打印**需要追加的 `export` 行，不会自动改你的 shell 配置
+- Windows：脚本只修改**用户级** `Path`，不动系统级；已改动的 `Path` 需要新开终端才生效
 
 可用环境变量（sh 脚本）/ 参数（PowerShell 脚本）覆盖默认行为：
 
@@ -85,7 +81,21 @@ irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
 | `MOLIAI_VERSION` / `-Version` | `v0.1.0` | 要安装的版本（含 `v` 前缀） |
 | `MOLIAI_INSTALL_DIR` / `-InstallDir` | `~/.local/bin`（不可写时 `~/bin`）/ `%USERPROFILE%\bin` | 安装目录 |
 
-安装目录不在 `PATH` 时，脚本只**打印**需要追加的行，不会自动改动你的 shell 配置文件。
+不想直接管道执行，可以先下载审查：
+
+```bash
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh -o install.sh
+less install.sh        # 看完再执行
+sh install.sh
+```
+
+```powershell
+# Windows
+irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 -OutFile install.ps1
+notepad install.ps1    # 看完再执行
+.\install.ps1
+```
 
 ### 手动下载
 

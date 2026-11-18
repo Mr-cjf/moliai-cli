@@ -179,7 +179,8 @@ try {
 catch {
     Write-Host ''
     Write-Host "[错误] $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
+    # 用 throw 而非 exit：通过 `irm ... | iex` 执行时 exit 会关掉用户当前 PowerShell 会话
+    throw
 }
 finally {
     if ($TempDir -and (Test-Path -LiteralPath $TempDir)) {

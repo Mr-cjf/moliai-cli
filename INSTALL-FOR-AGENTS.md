@@ -38,7 +38,41 @@ uname -sm
 
 ## 2. 安装 CLI
 
-CLI 是闭源软件，源码不公开，以单文件可执行程序分发。安装方式是从 Releases 下载：
+CLI 是闭源软件，源码不公开，以单文件可执行程序分发。
+
+### 2.1 优先：一键安装脚本
+
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
+```
+
+**Windows（PowerShell）**
+
+```powershell
+irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
+```
+
+脚本会自动：判断平台与架构 → 下载对应 Release → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 打印 PATH 提示 → 执行 `--version` 验证。
+
+- 平台不支持时脚本会**直接报错退出**，不会尝试模拟层或交叉运行
+- SHA256 校验失败时脚本以非 0 退出码结束，**不要继续使用该文件**
+- 需要固定版本或自定义目录：`MOLIAI_VERSION` / `MOLIAI_INSTALL_DIR`（sh），`-Version` / `-InstallDir`（PowerShell）
+- 安装目录不在 `PATH` 时脚本只打印需要追加的 `export` 行，**不会**自动修改用户的 shell 配置文件；需要用户自己决定是否写入
+- Windows 脚本只会改动**用户级** `Path`，不会动系统级
+
+如果执行环境不允许运行远程脚本，先下载审查内容再执行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh -o install.sh
+# 检查内容后再执行
+sh install.sh
+```
+
+### 2.2 备选：手动下载
+
+一键脚本失败时，直接从 Releases 下载单文件：
 
 ```bash
 # 以 macOS Apple Silicon 为例，替换为实际平台对应文件

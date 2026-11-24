@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # MoliAi CLI Skill
@@ -28,6 +28,23 @@ metadata:
 - 每个 `baseUrl` 一份独立令牌，登录新环境不覆盖旧环境
 - `MOLIAI_NOT_BOUND` + hint 指向 `moliai login key --base-url <url>` = 该环境没登录过，让用户提供该环境的 KEY，**不要**复用别的环境的凭据
 - `moliai logout` 会删掉**所有**环境；只想清一个环境用 `moliai env remove <url>`，且需用户同意
+
+## 升级 CLI（`update`）
+
+| 目的 | 命令 |
+|---|---|
+| 只查有没有新版本（不下载） | `moliai update --check` → `data.hasUpdate` |
+| 看会做什么（不下载） | `moliai update --dry-run` → `data.actions` |
+| 真更新（⚠️ 替换当前二进制） | `moliai update`（`setup --upgrade` 等价） |
+| 同版本重装 | `moliai update --force` |
+| 换镜像/私有 fork | `moliai update --repo <owner/repo>` 或 `moliai update config --repo <owner/repo>` 持久化 |
+| 看当前生效仓库与来源 | `moliai update config --show`（`arg` / `env` / `config` / `default`） |
+
+- **只有用户要求升级时才执行 `moliai update`**：它会替换正在使用的二进制，Windows 下 CLI 会直接退出（`replaced=false`，更新由 `.update.bat` 在后台完成）。汇报时要说明"CLI 将退出，更新在后台完成"，并提醒用户重新执行 `moliai --version` 确认。
+- 仓库优先级：`--repo` > `MOLIAI_UPDATE_REPO` > 配置 `updateRepo` > 默认 `Mr-cjf/moliai-cli`。`github.com` 下载域名不通时用 `--repo` 指向镜像，**不要**改代码或跳过校验。
+- `MOLIAI_UNSUPPORTED`（"当前不是单文件二进制安装"）= npm/源码安装，改用 `npm i -g @moliai/cli@latest` 或安装脚本，不要试图继续自动更新。
+- `MOLIAI_UNSUPPORTED`（"当前平台不支持自更新"）= 该平台无发布产物，改用安装脚本按版本重装。
+- `MOLIAI_NETWORK_ERROR`（404 / 下载失败 / SHA256 不匹配）= 如实上报，不自动换源、不跳过校验；SHA256 不匹配时已删除临时文件。
 
 ## 命令速查
 

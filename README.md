@@ -21,7 +21,7 @@
      curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
    - Windows PowerShell：
      irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
-3. 验证安装：moliai --version（应为 0.4.0）、moliai doctor（看 healthy 是否为 true）
+3. 验证安装：moliai --version（应为 0.5.0）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://test-api.aidancevid.com/api
@@ -75,7 +75,7 @@ irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.4.0`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.5.0`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
@@ -143,6 +143,60 @@ moliai --version
 ```
 
 包名是 `@moliai/cli`，安装后命令名是 `moliai`。运行时依赖只有 `commander`。这个仓库是 CLI 的源码仓库，`npm` 安装会拉取 npm 上的已发布包。
+
+### 升级（自更新）
+
+单文件二进制安装可以直接自更新（检测最新版本 → 下载 → 校验 SHA256 → 替换）：
+
+```bash
+moliai update --check      # 只查有没有新版本，不下载
+moliai update --dry-run    # 看会做什么（含产物大小），不下载
+moliai update              # 真正更新
+moliai update --force      # 版本号相同也重装
+```
+
+`setup --upgrade` 与 `moliai update` 完全等价：
+
+```bash
+moliai setup --upgrade --dry-run
+moliai setup --upgrade
+```
+
+**Windows 特别注意**：运行中的 `moliai.exe` 无法被覆盖。CLI 会下载新版本并生成 `.update.bat`，
+然后立即退出；脚本在约 2 秒后完成替换并自删。因此：
+
+- 命令输出里 `replaced` 为 `false`，`message` 提示「CLI 将退出，更新在后台完成」
+- 更新完成后重新执行 `moliai --version` 确认版本
+- 更新期间不要重复执行命令
+
+**平台支持**（与发布产物一致）：`win32-x64` / `darwin-x64` / `darwin-arm64` / `linux-x64`。
+其它平台（如 `linux-arm64`）会明确报 `MOLIAI_UNSUPPORTED`，请用 `install.sh` / `install.ps1` 或 npm 安装。
+
+**仓库来源**（优先级从高到低）：
+
+1. `--repo <owner/repo>`
+2. 环境变量 `MOLIAI_UPDATE_REPO`
+3. 配置文件 `~/.moliai/config.json` 的 `updateRepo`（`MOLIAI_CONFIG_DIR` 可改目录）
+4. 默认 `Mr-cjf/moliai-cli`
+
+配置持久化与查看：
+
+```bash
+moliai update config --repo <owner/repo>   # 写入配置
+moliai update config --show                # 显示当前生效仓库与来源（arg/env/config/default）
+```
+
+用途：内网镜像、私有 fork、`github.com` 下载域名不通时的替代源。
+`api.github.com` 未认证限流为 60 次/小时，够用；配了 `GITHUB_TOKEN` 会自动带上以提高额度
+（私有仓库还需要该 token，且 release 资产必须可被下载）。
+
+**npm / 源码安装**不走自更新（替换 `node` 可执行文件会破坏运行时），会明确拒绝并提示：
+
+```bash
+npm i -g @moliai/cli@latest
+```
+
+下载失败会给出清晰错误（网络不可达 / HTTP 状态 / 限流），不会静默跳过，也不会自动降级到其它来源。
 
 ## 获取 KEY
 
@@ -329,13 +383,20 @@ moliai model list --type video      # 看你的账号能用哪些模型
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
 | `setup` | 把 MoliAi Skill 安装到 Agent 宿主目录 | `moliai setup --agent all --dry-run` |
+| `setup --upgrade` | 自更新 CLI（等价于 `moliai update`） | `moliai setup --upgrade --dry-run` |
+| `update` | 自更新：检测版本、下载、校验 SHA256、替换二进制 | `moliai update --check` |
+| `update config` | 查看/持久化自更新仓库 | `moliai update config --repo <owner/repo>` |
 | `doctor` | 环境自检：本机（Node 版本、配置目录、宿主、沙箱信号）+ 连接环境（网关、token、画布、模型清单） | `moliai doctor` |
 | `diagnose` | 画布内容只读体检：优先调后端 Doctor 接口（`empty` / `failed` / `rerunnable`），后端未提供该端点时降级为本地扫描（仅 `empty` + `failed`，`data.source=local`） | `moliai diagnose --out report.json` |
 | `help` | 命令树（人类可读；加 `--json` 输出结构化命令树） | `moliai help --json` |
 | `schema <command>` | 单条命令的结构（参数、默认值、可选值、输出字段） | `moliai schema run` |
 
-`setup` 支持 `--agent claude|codex|dsh|generic|all`、`--scope user`、`--check`、`--dry-run`、`--target-dir`。
-`--upgrade` / `--uninstall` / `--quarantine` / `--dir` / `--set` / `--scope project` 尚未实现，使用时会明确报「不支持」。
+`setup` 支持 `--agent claude|codex|dsh|generic|all`、`--scope user`、`--check`、`--dry-run`、`--target-dir`，
+以及 `--upgrade`（自更新，可配合 `--repo` / `--force` / `--dry-run`）。
+`--uninstall` / `--quarantine` / `--dir` / `--set` / `--scope project` 尚未实现，使用时会明确报「不支持」。
+
+`update` 支持 `--check`、`--dry-run`、`--repo <owner/repo>`、`--force`；`update config --repo/--show` 管理仓库配置。
+Windows 下替换由 `.update.bat` 在 CLI 退出后完成（`replaced: false`），详见「升级（自更新）」。
 
 #### `doctor` 的检查项
 

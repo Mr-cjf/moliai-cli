@@ -6,7 +6,23 @@
 
 （无）
 
-## [0.4.0] - 2026-11-24
+## [0.5.0] - 2026-11-24
+
+### 新增 `update` 自更新与 `setup --upgrade`
+
+- **`moliai update`**：检测 GitHub Release 最新版本 → 下载当前平台产物 → 按 `SHA256SUMS.txt` 校验 → 替换二进制。
+  `--check` 只查版本、`--dry-run` 只列动作（含产物大小）、`--force` 版本相同也重装；
+  仓库可用 `--repo <owner/repo>` 指定，优先级 `--repo` > `MOLIAI_UPDATE_REPO` > 配置 `updateRepo` > 默认 `Mr-cjf/moliai-cli`
+- **`moliai update config --repo/--show`**：把仓库持久化到 `<配置目录>/config.json` 的 `updateRepo`（读改写，保留其它键）
+- **`moliai setup --upgrade`**：与 `moliai update` 完全同一套逻辑（同 `--dry-run` / `--repo` / `--force`），输出为 update 形态
+- **Windows 延迟替换**：运行中的 exe 无法覆盖，改为生成 `.update.bat` 并以 detached 方式启动，CLI 立即退出，
+  脚本 2 秒后 `move /y` 覆盖并自删；因此 Windows 下 `replaced=false`，`message` 明确提示「CLI 将退出，更新在后台完成」
+- **POSIX 原子替换**：同目录 `rename`（`current → current.old`、`new → current`），失败回滚，成功删除 `.old`
+- **平台支持**：`win32-x64` / `darwin-x64` / `darwin-arm64` / `linux-x64`；其它平台显式 `MOLIAI_UNSUPPORTED`
+- **npm/源码形态显式拒绝自更新**（`process.execPath` 是 node，替换会破坏运行时），提示 `npm i -g @moliai/cli@latest`
+- **失败不静默**：网络不可达 / HTTP 404 / 403 限流 / 缺产物 / 缺校验和 / SHA256 不匹配 均为明确错误，
+  校验失败即删除临时文件，不做自动换源或跳过
+- 新增 `src/core/update/{version,platform,release,download,replace,config}.ts` 与 `src/commands/update.ts`
 
 ### `diagnose` 对接后端 Doctor 接口（保留本地降级）
 
@@ -733,13 +749,6 @@
   （`jobs` 里同一 taskId 只保留一条），此前会新建第二条
 - **`group run` 查询节流**：`generations/prepare` 与 `billing/estimate` 走 500ms 间隔闸门（2 次/秒，
   网关查询限流 120 次/分钟）；`run` 单节点不经过该闸门，行为零变化
-
-### 发版工具链
-
-- **修复 `scripts/release.mjs` 在 Node 26 + Windows 下 `spawn npm.cmd` 报 `EINVAL`**：`.cmd` 必须由
-  命令行解释器执行，Windows 分支改为「单个命令行字符串 + `shell: true`」（避免 Node 26 的 DEP0190
-  弃用告警），非 Windows 保持直接 `spawn`。发版脚本自此可在本地完整跑通
-  （升版本 → 残留检查 → 构建 → 构建二进制 → 提交 → 打 tag）
 
 ## [0.1.0] - 2026-11-18
 

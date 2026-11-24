@@ -21,7 +21,7 @@
      curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
    - Windows PowerShell：
      irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
-3. 验证安装：moliai --version（应为 0.3.0）、moliai doctor（看 healthy 是否为 true）
+3. 验证安装：moliai --version（应为 0.4.0）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://test-api.aidancevid.com/api
@@ -75,7 +75,7 @@ irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.3.0`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.4.0`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
@@ -330,7 +330,7 @@ moliai model list --type video      # 看你的账号能用哪些模型
 |---|---|---|
 | `setup` | 把 MoliAi Skill 安装到 Agent 宿主目录 | `moliai setup --agent all --dry-run` |
 | `doctor` | 环境自检：本机（Node 版本、配置目录、宿主、沙箱信号）+ 连接环境（网关、token、画布、模型清单） | `moliai doctor` |
-| `diagnose` | 画布内容只读体检（**部分实现**：只输出 `empty` + `failed`，其余三类等后端 Doctor 接口） | `moliai diagnose --out report.json` |
+| `diagnose` | 画布内容只读体检：优先调后端 Doctor 接口（`empty` / `failed` / `rerunnable`），后端未提供该端点时降级为本地扫描（仅 `empty` + `failed`，`data.source=local`） | `moliai diagnose --out report.json` |
 | `help` | 命令树（人类可读；加 `--json` 输出结构化命令树） | `moliai help --json` |
 | `schema <command>` | 单条命令的结构（参数、默认值、可选值、输出字段） | `moliai schema run` |
 
@@ -356,30 +356,42 @@ moliai model list --type video      # 看你的账号能用哪些模型
 - `--offline`：只跑前 4 项本机检查，跳过所有联网检查（离线环境下也能自检）。
 - 无法判断时（例如 token 不是标准 JWT、没有 `exp`）显式输出 `warn` 并说明原因，不会静默当 `pass`。
 
-#### `diagnose` 的检查项（部分实现：只输出 2 类）
+#### `diagnose` 的检查项（优先后端 Doctor，失败降级本地扫描）
 
 ```bash
 moliai diagnose [canvasId] [--out report.json]
 ```
 
-`diagnose` 是**只读**命令：只发 `GET /canvases/{id}` 与每个失败节点各一次 `GET /tasks/{taskId}`，
-没有 `--fix`、没有 `--yes`、不自动重跑，不产生任何写入与扣费。`canvasId` 省略时用 `MOLIAI_CANVAS` 或目录绑定。
+`diagnose` 是**只读**命令：无 `--fix`、无 `--yes`、不自动重跑、不写任何业务数据、零扣费。
+`canvasId` 省略时用 `MOLIAI_CANVAS` 或目录绑定。
 
-**当前只实现 `empty` + `failed` 两类**，另外三类恒为空数组并在 `warnings` 里显式说明（不静默返回空）：
+数据来源由 `data.source` 明确标注：
 
-| 分类 | 状态 | 说明 |
+| `source` | 请求 | 覆盖分类 |
 |---|---|---|
-| `empty` | ✅ 已实现 | 无内容 且 无任务（`taskId` 为空）。text 节点看 `content` 是否空白；其余类型看 `mediaUrl` / `mediaId` / `content` 是否全空 |
-| `failed` | ✅ 已实现 | 节点 `status=failed` 且有 `taskId`，再查任务详情取错误码映射 `failReason` |
-| `refErrors` | ⛔ 恒为空 | 需要后端 Doctor 接口（`POST /canvases/{id}/doctor/reports` 等），当前后端未实现 |
-| `orderRisks` | ⛔ 恒为空 | 同上 |
-| `rerunnable` | ⛔ 恒为空 | 同上 |
+| `server` | `GET /canvases/{id}`（确认存在）→ `POST /canvases/{id}/doctor/reports`（`{"scope":"all"}`，201） | `empty` / `failed` / `rerunnable`；`refError` / `orderRisk` 由后端在 `notImplemented` 中声明未实现 |
+| `local` | `GET /canvases/{id}` + 每个失败节点一次 `GET /tasks/{taskId}` | 仅 `empty` / `failed`；`rerunnable` / `refErrors` / `orderRisks` 恒为空数组 |
 
-> 为什么另外三类必须是空数组：按需求 §8.4，`model_capability` / `missing_reference` / `ref_order` / `prompt_vague`
-> 这些分类**没有对应的后端错误码**，只能由提交期校验或 `diagnose` 自身的只读检查产生，且「未接入前不得输出这些分类」。
-> 因此 `diagnose` 现在不猜、不输出它们；接入后端 Doctor 接口时才补上，并会标注 `source: client_check`。
+**降级判定（只有一种情况降级）**：先 `GET` 确认画布存在；`POST` 返回 404 且 `serverCode`
+不是业务码（缺失或 `NOT_FOUND`）→ 视为后端没有该路由 → 降级本地扫描，并在 `warnings` 中
+明确写出「后端未提供 Doctor 接口，使用本地扫描（仅 empty + failed）」（不静默）。
 
-`failReason` 映射（先看业务 `errorCode`，未登记再看系统级 `error.code`，都没登记才是 `unknown`）：
+| 后端响应 | 行为 |
+|---|---|
+| `POST` 2xx | `source: "server"`，用后端 `issues` 分组 |
+| `POST` 404 + `DOCTOR_*` / `CANVAS_*` 等业务码 | 如实报错，**不降级** |
+| `POST` 404 且无业务码 / `NOT_FOUND` | 降级本地扫描，`source: "local"` + warning |
+| `POST` 5xx / 401 / 403 / 网络错误 | 如实报错，**不降级**（可能是后端故障，不是未实现） |
+
+分类口径（后端与本地扫描一致）：
+
+| 分类 | 判定 |
+|---|---|
+| `empty` | 无内容 **且** 无任务（`taskId` 为空）。text 节点看 `content` 是否空白；其余类型看 `mediaUrl` / `mediaId` / `content` 是否全空 |
+| `failed` | 节点 `status=failed` 且有 `taskId`，取错误码映射 `failReason`（后端模式下 `failReason` 由后端映射好，直接用） |
+| `rerunnable` | `status=failed` + 有 prompt + 有 model + 无运行中任务（**仅后端模式**；本地扫描无此项） |
+
+`failReason` 映射（本地扫描口径；先看业务 `errorCode`，未登记再看系统级 `error.code`，都没登记才是 `unknown`）：
 
 | failReason | 来源错误码 |
 |---|---|
@@ -389,23 +401,31 @@ moliai diagnose [canvasId] [--out report.json]
 | `invalid_request` | 提交期拦截类：`MODEL_UNSUPPORTED` / `TASK_TYPE_MISMATCH` / `COUNT_OUT_OF_RANGE` / `CONTEXT_NODE_INVALID` |
 | `unknown` | 未登记的错误码，或任务没有错误码 |
 
-输出的 `failed[].remediation` 是可直接复制执行的命令：`moliai run "<节点名>"`（节点无名称时用 nodeId）。
+`failed[].remediation` 可直接复制执行：后端模式用后端给出的命令（如 `moliai run "<节点名>" --rerun-failed`），
+本地模式用 `moliai run "<节点名>"`（节点无名称时用 nodeId）。
 
-输出结构（`--out` 落盘内容与 stdout 的 `data` 完全相同）：
+输出结构（`--out` 落盘内容与 stdout 的 `data` 完全相同；两种来源字段一致）：
 
 ```json
 { "ok": true, "data": {
-  "canvasId": "...", "reportId": "report-1a2b3c4d",
+  "source": "server",
+  "canvasId": "...", "canvasVersion": 123,
+  "reportId": "rpt-a3f9c2e1",
+  "generatedAt": "2026-11-24T10:30:00Z", "expiresAt": "2026-11-24T11:30:00Z",
+  "summary": { "empty": 1, "failed": 1, "rerunnable": 1, "refError": 0, "orderRisk": 0 },
   "empty":     [{ "nodeId": "...", "name": "..." }],
-  "failed":    [{ "nodeId": "...", "name": "...", "taskId": "...", "failReason": "compliance", "remediation": "moliai run \"镜头-03\"" }],
-  "refErrors": [], "orderRisks": [], "rerunnable": []
+  "failed":    [{ "nodeId": "...", "name": "...", "taskId": "...", "failReason": "compliance", "remediation": "moliai run \"镜头-03\" --rerun-failed" }],
+  "rerunnable":[{ "nodeId": "...", "name": "..." }],
+  "refErrors": [], "orderRisks": [],
+  "notImplemented": ["refError", "orderRisk"]
 }}
 ```
 
-- `reportId` 由 **CLI 本地生成**（`sha256(canvasId + canvasVersion + 时间戳)` 前 8 位，格式 `report-<hash>`）；
-  后端不保存诊断报告，这个 id 只用于引用本次本地报告。
-- 节点 `status=failed` 但没有 `taskId`（无法映射 `failReason`）不会静默丢弃，会在 `warnings` 里点名列出。
-- 某个失败节点的任务详情查不到（接口报错/缺 `task` 字段）时整条命令显式失败，不伪造 `unknown`。
+- `source: "local"` 时：`reportId` 形如 `report-<8位hash>`（CLI 本地生成），`expiresAt` 为 `null`，
+  `rerunnable` 恒为空，`notImplemented` 为 `["rerunnable","refError","orderRisk"]`，并带降级 warning。
+- `source: "server"` 时：`reportId` 是后端 `rpt-*`，报告有效期 1 小时（过期后重新执行即可，不复用旧 id）。
+- 节点 `status=failed` 但没有 `taskId`（无法映射 `failReason`）不会静默丢弃，会在 `warnings` 里点名列出（本地扫描）。
+- 本地模式下某个失败节点的任务详情查不到（接口报错/缺 `task` 字段）时整条命令显式失败，不伪造 `unknown`。
 
 
 ### 项目
@@ -2371,19 +2391,21 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 - **怎么办**：切图用 `moliai derive from-grid`；把切出来的图建成**分镜组**再执行
   `moliai storyboard create --from-nodes <切出的节点...>`。
 
-### 6. `diagnose` 只有部分实现（只输出 `empty` + `failed`）
+### 6. `diagnose` 走了本地降级（`source: "local"`）
 
-- **现象**：`moliai diagnose` 可以跑，但 `refErrors` / `orderRisks` / `rerunnable` 恒为空数组。
-- **原因**：这三类要求直接映射后端 Doctor 三段接口（`/doctor/reports` 等），**后端零实现**；
-  按需求 §8.4「未接入前不得输出这些分类」，暂时不输出，并在 `warnings` 里显式说明原因（不静默）。
-- **怎么办**：`empty` / `failed` 现在可用（来自画布节点状态与任务错误码，纯只读）。
-  引用错误 / 顺序风险 / 可重跑请等后端 Doctor 接口；日常环境自检仍用 `moliai doctor`。
+- **现象**：`moliai diagnose` 能跑，但 `data.source` 是 `local`，`rerunnable` 恒为空，`warnings` 第一条是
+  「后端未提供 Doctor 接口，使用本地扫描（仅 empty + failed）」。
+- **原因**：`POST /canvases/{id}/doctor/reports` 返回 404 且 `serverCode` 不是业务码（缺失或 `NOT_FOUND`）
+  → CLI 判定「后端没有这个路由」，降级为本地扫描（不是静默降级，warning 会明说）。
+- **怎么办**：确认后端已部署含 Doctor 端点的构建（重刷 `/api` 网关路由）；部署后无需改 CLI。
+  若要确认是不是业务错误，看 `data`/`details.serverCode`——`DOCTOR_*` / `CANVAS_*` 是业务码，CLI 会如实报错而不是降级。
+- **注意**：5xx / 401 / 403 / 网络错误**不会**降级，会直接报错——那不是「后端未实现」，可能是故障。
 
 | 命令 | 检查什么 | 状态 |
 |---|---|---|
 | `moliai doctor` | 本机 + 连接环境（版本、登录、网关可达、画布可用、模型清单） | ✅ 可用 |
-| `moliai diagnose` | **画布内容**：`empty` / `failed` | ✅ 可用 |
-| `moliai diagnose` | **画布内容**：引用错误 / 顺序风险 / 可重跑 | ❌ 后端未实现（恒为空 + warning） |
+| `moliai diagnose`（`source: server`） | **画布内容**：`empty` / `failed` / `rerunnable`（后端 Doctor 报告） | ✅ 可用（需后端已部署该端点） |
+| `moliai diagnose`（`source: local`） | **画布内容**：`empty` / `failed`（本地降级，仅在后端无该路由时） | ✅ 可用 |
 
 ### 7. `run` 不支持部分节点类型
 

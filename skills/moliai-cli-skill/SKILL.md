@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 # MoliAi CLI Skill
@@ -38,7 +38,7 @@ metadata:
 | 项目 → 画布 | `moliai project list` → `moliai canvas list -w <projectId>` |
 | 绑定画布到当前目录 | `moliai canvas use <canvasId>` |
 | 看画布与节点 | `moliai canvas show` / `moliai node list --limit 200` |
-| 画布体检（只读，零扣费） | `moliai diagnose` → 看 `empty`（空节点）/ `failed`（失败节点 + `failReason`）；`--out report.json` 落盘 |
+| 画布体检（只读，零扣费） | `moliai diagnose` → 先看 `data.source`（`server` = 后端 Doctor 报告，`local` = 后端无该路由时的本地降级）；再按 `empty` / `failed` / `rerunnable` 查看问题，`--out report.json` 落盘 |
 | 按条件筛节点 | `moliai node list --status completed --has-result` / `--group "<组名>"` / `--sort y --limit 20` |
 | 查模型契约 | `moliai model list` / `moliai model search <kw>` / `moliai model <modelKey>` |
 | 建节点 | `moliai node create "<名>" -t image --x 0 --y 0`（`-t super_resolution` 必须加 `--super-resolution-type image\|video`） |
@@ -251,21 +251,19 @@ moliai run --where 'type=image' --max-nodes 1 --explain   # 批量：每个 node
    传节点名等非 UUID 会本地报 `MOLIAI_ARG_INVALID`「不是合法的 UUID：xxx」（不再报「画布中找不到节点」/404）。
    接受节点引用的命令（`run` / `extract` / `derive` / `node delete --ids`）不受此限制。
 
-## 画布体检（`diagnose`，只读、零扣费、只输出 2 类）
+## 画布体检（`diagnose`，只读、零扣费）
 
-1. `moliai diagnose [canvasId] [--out report.json]`：只发 `GET /canvases/{id}`（+ 每个失败节点一次 `GET /tasks/{taskId}`），
-   **没有 `--fix`、没有 `--yes`、不自动重跑、不写任何业务数据**。`canvasId` 省略时用 `MOLIAI_CANVAS` / 目录绑定。
-2. **当前只实现两类**（其余三类恒为空数组 + `warnings` 说明，别当成「没发现问题」）：
-   - `empty`：无内容 **且** 无任务。text 节点看 `content` 是否空白；其余类型看 `mediaUrl` / `mediaId` / `content` 是否全空。
-   - `failed`：节点 `status=failed` 且有 `taskId` → 查任务错误码 → `failReason`；
-     `remediation` 直接给出可执行命令 `moliai run "<节点名>"`。
-3. `refErrors` / `orderRisks` / `rerunnable` 需要后端 Doctor 三段接口（`/doctor/reports` 等），**后端零实现**，
-   按需求「未接入前不得输出这些分类」恒为空；要用这三类必须等后端接口。
-4. `failReason`：`compliance`←`SENSITIVE_CONTENT`、`reference_limit`←`TOO_MANY_REFERENCE_IMAGES`、
-   `cancelled`←`TASK_CANCELLED`、`invalid_request`←提交期拦截类错误码、其余→`unknown`
-   （先看 `errorCode`，未登记再看 `error.code`）。
-5. `reportId` 是 **CLI 本地生成**（`sha256(canvasId + canvasVersion + 时间戳)` 前 8 位），后端不存报告；
-   `--out` 落盘内容与 stdout 的 `data` 完全一致。
+1. `moliai diagnose [canvasId] [--out report.json]`：**没有 `--fix`、没有 `--yes`、不自动重跑、不写任何业务数据**。
+   `canvasId` 省略时用 `MOLIAI_CANVAS` / 目录绑定。
+2. **先看 `data.source`**：`server` = 后端 Doctor 报告（`POST /canvases/{id}/doctor/reports`）；
+   `local` = 后端没有该路由时的本地降级扫描。降级会在 `warnings` 第一条明确说明（不静默）。
+3. `source=server` 时三类都有：`empty`（无内容且无任务）、`failed`（`status=failed` + `taskId`，后端已映射
+   `failReason`）、`rerunnable`（失败但参数齐全、无运行中任务）；`refErrors` / `orderRisks` 由后端在
+   `notImplemented` 中声明未实现，恒为空数组。
+4. `source=local` 时只有 `empty` / `failed`（`remediation` 为 `moliai run "<节点名>"`），
+   `rerunnable` / `refErrors` / `orderRisks` 恒为空数组，`notImplemented` = `["rerunnable","refError","orderRisk"]`。
+5. 什么情况**不降级**（直接报错）：`POST` 404 但 `serverCode` 是业务码（`DOCTOR_*` / `CANVAS_*`）、
+   5xx、401/403、网络错误——那是真实故障/业务拒绝，降级会把问题掩盖成「扫不到问题」。
 6. 环境自检用 `moliai doctor`（本机 + 连接环境），**不要混用**：`doctor` 不看画布内容，`diagnose` 不看环境。
 
 ## 批量选择器（`--where`）与批量删除

@@ -6,7 +6,24 @@
 
 （无）
 
-## [0.3.0] - 2026-11-24
+## [0.4.0] - 2026-11-24
+
+### `diagnose` 对接后端 Doctor 接口（保留本地降级）
+
+- **`moliai diagnose` 改为优先调 `POST /canvases/{id}/doctor/reports`（`{"scope":"all"}`）**：
+  报告含 `empty` / `failed` / `rerunnable` 三类，`refError` / `orderRisk` 由后端在 `notImplemented` 中
+  声明未实现（`summary` 计数恒为 0，CLI 不补造内容）
+- **新增 `data.source`（`server` / `local`）**：明确标注本次报告来自后端还是本地降级扫描；
+  两种来源输出同一套字段（不可用处为空数组 / 空计数 / `null`）
+- **降级判定只认一种情况**：先 `GET /canvases/{id}` 确认画布存在；`POST` 返回 404 且 `serverCode`
+  不是业务码（缺失或 `NOT_FOUND`）→ 判定「后端没有该路由」→ 降级本地扫描（现有一套逻辑原样保留），
+  并追加 warning「后端未提供 Doctor 接口，使用本地扫描（仅 empty + failed）」
+- **不降级**（如实报错）：`POST` 404 且 `serverCode` 是 `DOCTOR_*` / `CANVAS_*` 等业务码、5xx、401/403、网络错误
+  ——这些是业务拒绝或后端故障，降级会把真实问题掩盖成「扫不到问题」
+- **后端报告严格解析**：缺字段 / `failReason` 未登记 / `category` 未登记 → `MOLIAI_INTERNAL_ERROR`
+  （带 `serverTraceId`），不猜、不丢弃问题条目
+- 后端模式下 `failed[].remediation` 直接用后端给出的命令（如 `moliai run "<节点名>" --rerun-failed`）；
+  `--out` 与只读边界不变
 
 ### 新增 `storyboard stitch`：本地 ffmpeg 拼图 → 上传 → 登记结果节点
 
@@ -716,6 +733,13 @@
   （`jobs` 里同一 taskId 只保留一条），此前会新建第二条
 - **`group run` 查询节流**：`generations/prepare` 与 `billing/estimate` 走 500ms 间隔闸门（2 次/秒，
   网关查询限流 120 次/分钟）；`run` 单节点不经过该闸门，行为零变化
+
+### 发版工具链
+
+- **修复 `scripts/release.mjs` 在 Node 26 + Windows 下 `spawn npm.cmd` 报 `EINVAL`**：`.cmd` 必须由
+  命令行解释器执行，Windows 分支改为「单个命令行字符串 + `shell: true`」（避免 Node 26 的 DEP0190
+  弃用告警），非 Windows 保持直接 `spawn`。发版脚本自此可在本地完整跑通
+  （升版本 → 残留检查 → 构建 → 构建二进制 → 提交 → 打 tag）
 
 ## [0.1.0] - 2026-11-18
 

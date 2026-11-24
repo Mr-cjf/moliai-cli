@@ -45,13 +45,13 @@ CLI 是闭源软件，源码不公开，以单文件可执行程序分发。
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh | sh
 ```
 
 **Windows（PowerShell）**
 
 ```powershell
-irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 | iex
 ```
 
 脚本会自动：判断平台与架构 → 下载对应 Release → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 打印 PATH 提示 → 执行 `--version` 验证。
@@ -65,7 +65,7 @@ irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
 如果执行环境不允许运行远程脚本，先下载审查内容再执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh -o install.sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh -o install.sh
 # 检查内容后再执行
 sh install.sh
 ```
@@ -101,6 +101,19 @@ sha256sum -c SHA256SUMS.txt
 - Windows：点「更多信息」→「仍要运行」
 - macOS：`xattr -dr com.apple.quarantine ./moliai`，或在「系统设置 → 隐私与安全性」中点「仍要打开」
 
+### 2.3 npm（⚠️ 暂未发布，不要用这条路安装）
+
+> **⚠️ 暂未发布，请勿执行。** `@moliai/cli` 尚未发布到 npm，请使用 2.1 或 2.2 的 GitHub Release 方式安装。以下命令仅供发布后参考。
+
+```bash
+npm install -g @moliai/cli@0.5.0
+```
+
+包名是 `@moliai/cli`，安装后的命令名是 `moliai`；这条路线需要 Node.js **≥ 20**。
+
+全局安装失败（权限不足）时**不要**自行改用 `sudo` 或修改 npm prefix——先报告错误原文，由用户决定。
+用户坚持走 npm 但装不上时，如实说明「npm 包暂未发布/不可用」，引导回 2.1 一键脚本或 2.2 手动下载，**不要**尝试从源码构建。
+
 ## 3. 验证安装
 
 ```bash
@@ -110,6 +123,8 @@ moliai doctor       # 本机自检，恒以退出码 0 结束，看 data.healthy
 ```
 
 `doctor` 的结论要看 `data.checks` 里是否有 `fail`，而不是只看退出码。
+
+没有网络时用 `moliai doctor --offline`，只跑本机检查。
 
 ## 4. 安装 Skill
 
@@ -221,3 +236,36 @@ moliai project list  # 只读接口，验证鉴权链路真的通
 - 长任务用 `moliai wait <jobId> --max 60` 分轮等待，不要提高 `--wait` 硬等
 
 详细命令与成本规则见随包安装的 Skill，以及 `moliai help --json`。
+
+## 10. ffmpeg 缺失时怎么办
+
+`moliai derive audio-separation` / `derive audio-process` 需要系统 ffmpeg。
+CLI **不内置** ffmpeg（那样会让二进制从 110MB 涨到 243MB）。
+
+当这些命令返回 `MOLIAI_UNSUPPORTED`（退出码 5）时，按错误里的 `hint` 安装：
+
+| 平台 | 命令 |
+|---|---|
+| macOS | `brew install ffmpeg` |
+| Ubuntu / Debian | `sudo apt update && sudo apt install -y ffmpeg` |
+| Windows | `winget install --id Gyan.FFmpeg` |
+
+**Agent 注意事项**：
+
+- 不要尝试用 curl/wget 直接下载 ffmpeg 二进制并塞进 PATH —— 版本与依赖不可控
+- 不要尝试自己编译
+- 不要因为这个失败就静默跳过音频功能，要明确告诉用户缺什么
+- 安装后用 `moliai doctor` 确认 `ffmpeg` 检查项变成 `pass`
+- 如果包管理器不可用（如受限环境），提示用户手动下载并设置 `MOLIAI_FFMPEG=/path/to/ffmpeg`
+
+**已有 ffmpeg 但不想要 PATH 污染**：
+
+```bash
+moliai derive audio-process <节点> --trim-start 1 --trim-end 2 --ffmpeg /opt/ffmpeg/bin/ffmpeg
+```
+
+或
+
+```bash
+export MOLIAI_FFMPEG=/opt/ffmpeg/bin/ffmpeg
+```

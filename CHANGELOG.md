@@ -24,6 +24,8 @@
   校验失败即删除临时文件，不做自动换源或跳过
 - 新增 `src/core/update/{version,platform,release,download,replace,config}.ts` 与 `src/commands/update.ts`
 
+## [0.4.0]
+
 ### `diagnose` 对接后端 Doctor 接口（保留本地降级）
 
 - **`moliai diagnose` 改为优先调 `POST /canvases/{id}/doctor/reports`（`{"scope":"all"}`）**：
@@ -40,6 +42,8 @@
   （带 `serverTraceId`），不猜、不丢弃问题条目
 - 后端模式下 `failed[].remediation` 直接用后端给出的命令（如 `moliai run "<节点名>" --rerun-failed`）；
   `--out` 与只读边界不变
+
+## [0.3.0]
 
 ### 新增 `storyboard stitch`：本地 ffmpeg 拼图 → 上传 → 登记结果节点
 
@@ -143,6 +147,8 @@
   而 mp3 编码器按许可证红线不使用 → 唯一组合是 wav；体积代价见 README
 - **NOTICE**：ffmpeg 不随包分发，仅说明「运行期需用户自行安装、不经本软件分发」
 
+## [0.2.0]
+
 ### 修复（derive 预算闸门覆盖全部子命令）
 
 - `derive depth-capture` / `derive video-continuation` 与 4 个预设图场景
@@ -192,7 +198,7 @@
     `super-resolution` / `image-edit` / `video-edit`）的 `--run`、`extract`
   - `moliai jobs --label <文本>` 按作业标签筛选（精确匹配）；`moliai jobs --everywhere` 与
     `--all` 等价（跨全部画布）；`jobs` 输出每项新增 `label` 字段
-  - ⚠️ 作业标签与**连线标签**（`connection create/update --label` → 后端连线标签字段）、
+  - ⚠️ 作业标签与**连线标签**（`connection create/update --label` → 后端连线记录里的连线标签字段）、
     **参考素材别名**（`derive video-edit --ref-label`）是三个不同东西，README 有对照表；
     作业标签只写本地作业记录，**不进请求体、不影响生成结果**
   - `--notify desktop | cmd:"<本地命令>"`（`run` / `wait` / `group run` / `apply --run`）：

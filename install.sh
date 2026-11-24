@@ -3,7 +3,7 @@
 # MoliAi CLI 一键安装脚本（macOS / Linux）
 #
 # 用法：
-#   curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
+#   curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh | sh
 #
 # 可用环境变量覆盖：
 #   MOLIAI_VERSION      版本号，默认 v0.5.0（形如 v0.5.0，含 v 前缀）

@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   用法（PowerShell）：
-    irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
+    irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 | iex
 
   先下载再执行：
     .\install.ps1

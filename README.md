@@ -18,9 +18,9 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh | sh
    - Windows PowerShell：
-     irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 | iex
 3. 验证安装：moliai --version（应为 0.5.0）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
@@ -40,7 +40,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh \| sh`（Windows 用 `irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -49,7 +49,7 @@
 
 1. 打开 <https://aidancevid.com> 注册账号，并完成充值（生成任务消耗「魔力值」）
 2. 在网页上**新建一个项目**——CLI 没有 `project create`，项目只能在网页创建
-3. 仅当用 npm 方式安装时才需要 Node.js **≥ 20**（一键脚本安装的是单文件二进制，不需要 Node）
+3. 二进制安装不需要 Node.js（一键脚本装的是单文件二进制）。只有将来通过 npm 安装（**当前暂未发布**）才需要 Node.js **≥ 20**
 
 ## 其他安装方式
 
@@ -58,13 +58,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -81,14 +81,14 @@ irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -137,12 +137,14 @@ moliai --version
 
 ### npm（源码方式）
 
+> **⚠️ 暂未发布，请勿执行。** `@moliai/cli` 尚未发布到 npm，请使用上方 GitHub Release 安装方式。以下命令仅供发布后参考。
+
 ```bash
 npm install -g @moliai/cli
 moliai --version
 ```
 
-包名是 `@moliai/cli`，安装后命令名是 `moliai`。运行时依赖只有 `commander`。这个仓库是 CLI 的源码仓库，`npm` 安装会拉取 npm 上的已发布包。
+包名是 `@moliai/cli`，安装后命令名是 `moliai`。运行时依赖只有 `commander`。这个仓库是 CLI 的源码仓库，但 `@moliai/cli` **目前尚未发布到 npm**，所以上面这条命令暂时无法使用——安装请走 GitHub Release（一键脚本或手动下载单文件二进制）。
 
 ### 升级（自更新）
 
@@ -170,7 +172,7 @@ moliai setup --upgrade
 - 更新期间不要重复执行命令
 
 **平台支持**（与发布产物一致）：`win32-x64` / `darwin-x64` / `darwin-arm64` / `linux-x64`。
-其它平台（如 `linux-arm64`）会明确报 `MOLIAI_UNSUPPORTED`，请用 `install.sh` / `install.ps1` 或 npm 安装。
+其它平台（如 `linux-arm64`）会明确报 `MOLIAI_UNSUPPORTED`，请用 `install.sh` / `install.ps1` 重装，或从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载对应平台的二进制后自行放到 `PATH` 里（**npm 包暂未发布，当前不可用**）。
 
 **仓库来源**（优先级从高到低）：
 
@@ -191,6 +193,8 @@ moliai update config --show                # 显示当前生效仓库与来源�
 （私有仓库还需要该 token，且 release 资产必须可被下载）。
 
 **npm / 源码安装**不走自更新（替换 `node` 可执行文件会破坏运行时），会明确拒绝并提示：
+
+> **⚠️ npm 包暂未发布，以下升级命令当前不可用，请勿执行。** 二进制安装请使用 `moliai update`。
 
 ```bash
 npm i -g @moliai/cli@latest
@@ -2341,7 +2345,7 @@ moliai setup --agent all --check     # 复核
 ```
 
 默认写入 `~/.agents/skills/moliai-cli-skill` 与 `~/.claude/skills/moliai-cli-skill`，安装后重启宿主会话生效。
-也可以用支持 Skill 目录的通用方式安装：把 npm 包里的 `node_modules/@moliai/cli/skills/moliai-cli-skill/` 整个目录复制到宿主的 skills 目录。
+也可以用支持 Skill 目录的通用方式安装：`npx skills add Mr-cjf/moliai-cli --skill moliai-cli-skill -g`（宿主支持 Skill 目录时可用）。若你本地 clone 了仓库，Skill 目录在仓库内的 `skills/moliai-cli-skill/`，复制到宿主的 skills 目录即可。（`@moliai/cli` 暂未发布到 npm，不存在 `node_modules/@moliai/cli/skills/moliai-cli-skill/` 这条路径。）
 
 给 Agent 看的安装说明见 [INSTALL-FOR-AGENTS.md](./INSTALL-FOR-AGENTS.md)。
 

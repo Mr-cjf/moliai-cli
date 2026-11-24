@@ -6,7 +6,109 @@
 
 （无）
 
-## [0.2.0] - 2026-11-23
+## [0.3.0] - 2026-11-24
+
+### 新增 `storyboard stitch`：本地 ffmpeg 拼图 → 上传 → 登记结果节点
+
+- **新命令 `moliai storyboard stitch <组> -o <png>`**：读 `GET .../storyboard/stitch-inputs` 的
+  `cells[]`（每格 `slotIndex/x/y/width/height/mediaUrl`）→ 下载每格图 → 本地 ffmpeg 合成 PNG →
+  四段式分片上传 → `POST .../storyboard/stitches` 登记；**只上传与登记，不提交生成、不扣费**
+- **像素口径**：输出尺寸完全取后端 `outputWidth × outputHeight`；每格先 `contain` 缩放（保持比例、
+  不拉伸）再 `pad` 到精确 `w×h`（填充色 = 组背景色，`null` 时透明），最后按 `cells` 的 `x/y`
+  `overlay` 到画布。合成后本地复核 PNG 尺寸，不符即报错，不上传错图
+- **`inputSnapshot` 原样回传**：`config` / `inputs` 直接取服务端快照，`expectedCanvasVersion` 与
+  `inputCanvasVersion` 都取 `stitch-inputs.canvasVersion`（后端要求二者相等）；`inputs` 精确等于
+  有图成员集合，多/少都在本地先拦
+- **依赖后端新字段**：`cells[]` / `outputWidth` / `outputHeight`（`cellGap` / `padding` / `cellLongSide`
+  仅回显）。字段为空（旧构建）→ `MOLIAI_UNSUPPORTED` 明确报错并**不下载、不上传、不写画布**；
+  空组（零有图成员）→ `MOLIAI_ARG_INVALID`「分镜组没有可拼接的图」
+- **`--keep-inputs <dir>`** 保留下载的原图（`slot-<slotIndex>.png`），默认用临时目录并在结束后清理
+- 新增 `src/core/ffmpeg/image-ops.ts`（`compositeStoryboardPng` / `cropGridImages` /
+  `probeLocalImageSize`）；新增 `src/commands/storyboard-stitch.ts`
+
+### 新增 `derive from-grid`：网格切图派生 N 个 image 节点
+
+- **新命令 `moliai derive from-grid <image节点> --rows N --columns N`**：下载源图 →
+  ffmpeg `crop` 切成 N 张 → 逐张上传 → 创建 N 个 `image` 节点（`origin=manual`，挂 `mediaUrl` +
+  `mediaId`）→ 从源节点各建一条 `manual` 连线。**只建节点与连线，不提交生成、不扣费**
+- **切图口径**：`gap=0` 时按「左右边界各自取整后相减」切分，余数归最后一格（不丢像素、不重叠）；
+  `--gap <px>` 表示源图格子之间本身有间隔，先扣掉 `count-1` 个间隔再等分，间隔不进入产物
+- **定位**：`--x/--y` 给首个结果节点坐标（都不给时复用 `canvas-placement` 的避让算法），
+  其余按 `rows × columns` 网格顺延（节点间距 40）
+- **中途失败不静默**：错误 `details.createdNodes` 列出已创建节点（节点/连线无幂等键，不做回滚）
+- `derive list` 增加 `from-grid` 场景（共 13 项）
+
+### 新增 `diagnose`：画布内容只读体检（部分实现：`empty` + `failed`）
+
+- **新命令 `moliai diagnose [canvasId] [--out <path>]`**：纯只读（只发 `GET /canvases/{id}` 与失败节点的
+  `GET /tasks/{taskId}`），无 `--fix`、无 `--yes`、不自动重跑、零写入零扣费
+- **只输出两类**：
+  - `empty`：无内容 **且** 无任务（`taskId` 为空）。text 节点看 `content` 是否空白；其余类型看
+    `mediaUrl` / `mediaId` / `content` 是否全空
+  - `failed`：节点 `status=failed` 且有 `taskId` → 查任务 → 映射 `failReason`，并给出可执行
+    `remediation`（`moliai run "<节点名>"`，无名称时用 nodeId）
+- **`failReason` 映射（§6.15.3）**：`SENSITIVE_CONTENT`→`compliance`、
+  `TOO_MANY_REFERENCE_IMAGES`→`reference_limit`、`TASK_CANCELLED`→`cancelled`、
+  提交期拦截类（`MODEL_UNSUPPORTED` / `TASK_TYPE_MISMATCH` / `COUNT_OUT_OF_RANGE` / `CONTEXT_NODE_INVALID`）→`invalid_request`；
+  兜底顺序为「先看 `errorCode`，未登记再看 `error.code`」，都没登记才是 `unknown`
+- **另外三类恒为空 + 显式说明**：`refErrors` / `orderRisks` / `rerunnable` 需要后端 Doctor 三段接口
+  （`/doctor/reports` 等），当前后端零实现；按需求 §8.4「未接入前不得输出这些分类」，保持空数组并在
+  `warnings` 里写明原因与「接入时须标注 `source: client_check`」，**不静默返回空**
+- **`reportId` 由 CLI 本地生成**（`sha256(canvasId + canvasVersion + 时间戳)` 前 8 位，格式 `report-<hash>`）；
+  后端不保存诊断报告，该 id 只用于引用本次本地报告
+- **不静默**：`status=failed` 但没有 `taskId` 的节点无法映射 `failReason`，会在 `warnings` 中点名列出；
+  失败节点的任务详情取不到（接口报错/缺 `task`）时整条命令显式失败，不伪造 `unknown`
+- `--out` 落盘内容与 stdout 的 `data` 完全相同；输出字段登记进 `OUTPUT_FIELDS_REGISTRY`（`moliai schema diagnose` 可见）
+
+### 新增 `run --explain`：输出每个参数的来源（零写入）
+
+- **`run` 新增全局风格开关 `--explain`**：在 `--dry-run` 基础上输出 `data.explain`
+  = `{ request（已脱敏）, parameterSources, steps, warnings }`，回答「为什么这个值是它」
+- **`--explain` 强制走 dry-run**：不写画布、不建任务、不扣费（NFR-20）；批量模式下会忽略
+  `--execute` 并在 `warnings` 中说明只输出预览
+- **来源七类**：`explicit` / `binding` / `schema-default` / `upstream-inferred` / `node-config` /
+  `cli-default` / `unknown`。用户显式传入的值即使等于契约默认值也标 `explicit`
+- **只在参数组装环节埋点**判定：画布来自 `resolveCanvasId` 的 source、prompt 来自 `resolvePrompt` 的
+  source、模型来自是否传 `--model`、生成参数来自 `--set` / 节点 `modelParams` / 契约 `default`
+- **schema 覆盖限制如实标注**：契约只覆盖已配置 `parameterSchema` 的 modelKey（当前
+  `qwen-image::qwen-image-2.1`、`tokenproto::doubao-seedance-2-5-260628` 等）；其它模型
+  标 `unknown` + warning，**不静默省略**
+- **prepare 被拒时也附 explain**：`--explain` 下若 400，`error.details.explain` 同样给出请求体与来源，
+  并列出「契约必填但未提供」的参数（含契约默认值）
+- 新增 `src/core/explain.ts`（来源判定 / 契约默认值查询 / 脱敏）；`RunDryRunData` 增加可选 `explain`
+
+### 打通 `derive video-continuation --run`（frontend_clip 裁切上传 + 报价口径）
+
+- **`derive video-continuation --run` 现在真的可用**：下载源视频 → 本地 ffmpeg 裁切 `[--from, --to)` →
+  上传片段取 `clipMediaId` → `POST /canvases/{id}/generate` 以 `frontend_clip` 模式提交。
+  补齐此前缺失的 6 个字段：`videoContinuation.inputMode/clipMediaId/clipDurationMs/extensionDurationSeconds`、
+  外层 `options.duration` / `options.resolution`，外加 `sourceExpectations`（复用创建时的 prepare 结果）。
+  此前请求被后端 400 `VIDEO_CONTINUATION_INPUT_MODE_UNSUPPORTED`
+- **新参数**：`--duration <秒>`（输出/续写秒数，4–30 整数，`--run` 必填）、
+  `--resolution <480p|720p>`（默认 720p）、`--fast`（裁切改用 `-c copy`）、`--keep-clip <path>`（保留片段检查）
+- **报价修正**：`--dry-run --run` 与提交前报价都改用 `videoContinuationBilling{inputMode, selectedDurationMs,
+  extensionDurationSeconds}` 口径，并显式带 `options.resolution`（此前只发 `{apiType, model, options.duration}`
+  落到 1080p 默认档口径错误）。实测 720p 4 秒 = **64**（原口径 100）
+- **`core/ffmpeg` 新增 `trimVideo`**：默认重编码（`libx264 -crf 20 -preset veryfast` + `aac 128k`，
+  精确到帧），`{ fast: true }` 用 `-c copy`；返回值用 `probeDuration` + ffprobe 回读**实际**时长与宽高
+- **许可证口径更新**：ffmpeg 不随 CLI 分发，改用用户系统 ffmpeg，因此不再受 LGPL 约束，
+  重编码使用用户 ffmpeg 自带编码器（`media-ops.ts` / `ffmpeg/index.ts` 注释同步修正）
+
+### 新增（音频两个派生场景）
+
+- **运行期 ffmpeg 解析（`core/ffmpeg/`）**：`--ffmpeg` > `MOLIAI_FFMPEG` > PATH > 显式失败
+  （`MOLIAI_UNSUPPORTED`，hint 给出分平台安装指引）；**不内置 ffmpeg**，用户装系统版即可；
+  `ffprobe` 可选（`MOLIAI_FFPROBE`），没有时回退解析 `ffmpeg -i`
+- **`doctor` 新增 `ffmpeg` 检查项**：显示来源（系统/指定）、版本与路径；缺失为 `warn`（只影响音频派生）
+- **`derive audio-separation`（音视频分离）**：本地抽音轨（PCM wav）+ 去音轨（视频流复制）→ 上传两个文件 →
+  `POST /derivations/video-audio-separation` 一次性建无声视频节点 + 分离音频节点 + 2 条派生连线
+- **`derive audio-process`（音频处理）**：本地截取（`--trim-start`/`--trim-end`，区间 ≥0.5 秒）或
+  保调变速（`--speed 0.1–4.0`，`atempo`，超出单级范围自动串联）→ 上传 → `POST /derivations/audio-processing`
+- 两个场景都**只建节点与派生连线，不提交生成、不扣费**；支持 `--dry-run`（零写入预览步骤）、
+  `--operation-id` 幂等、`--expected-version`、`--keep-work-files`；`derive list` 里状态由 `supported: false` 改为 `true`
+- **音频输出固定 PCM wav**：后端上传白名单硬编码 `{wav, mp3}`（m4a/aac 会被 400 `DOODLE_IMAGE_TYPE_INVALID`），
+  而 mp3 编码器按许可证红线不使用 → 唯一组合是 wav；体积代价见 README
+- **NOTICE**：ffmpeg 不随包分发，仅说明「运行期需用户自行安装、不经本软件分发」
 
 ### 修复（derive 预算闸门覆盖全部子命令）
 

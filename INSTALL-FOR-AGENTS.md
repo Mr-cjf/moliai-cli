@@ -104,7 +104,7 @@ sha256sum -c SHA256SUMS.txt
 ## 3. 验证安装
 
 ```bash
-moliai --version    # 应输出 0.2.0
+moliai --version    # 应输出 0.3.0
 moliai help         # 应列出命令树
 moliai doctor       # 本机自检，恒以退出码 0 结束，看 data.healthy
 ```

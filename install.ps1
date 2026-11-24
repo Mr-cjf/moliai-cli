@@ -8,11 +8,11 @@
 
   先下载再执行：
     .\install.ps1
-    .\install.ps1 -Version v0.2.0 -InstallDir D:\tools\moliai
+    .\install.ps1 -Version v0.3.0 -InstallDir D:\tools\moliai
     .\install.ps1 -WhatIf          # 只打印计划，不下载不写入
 
 .PARAMETER Version
-  版本号，默认 v0.2.0（含 v 前缀）。也可用环境变量 MOLIAI_VERSION 覆盖。
+  版本号，默认 v0.3.0（含 v 前缀）。也可用环境变量 MOLIAI_VERSION 覆盖。
 
 .PARAMETER InstallDir
   安装目录，默认 $env:USERPROFILE\bin。也可用环境变量 MOLIAI_INSTALL_DIR 覆盖。
@@ -25,7 +25,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = $(if ($env:MOLIAI_VERSION) { $env:MOLIAI_VERSION } else { 'v0.2.0' }),
+    [string]$Version = $(if ($env:MOLIAI_VERSION) { $env:MOLIAI_VERSION } else { 'v0.3.0' }),
     [string]$InstallDir = $(if ($env:MOLIAI_INSTALL_DIR) { $env:MOLIAI_INSTALL_DIR } else { Join-Path $env:USERPROFILE 'bin' }),
     [switch]$WhatIf
 )

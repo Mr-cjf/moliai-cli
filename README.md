@@ -6,8 +6,6 @@
 - 失败不静默：参数非法会直接报错并列出可选值，不会偷偷换成别的参数或别的模型
 - **只有 `run` 会真实扣费**，`run --dry-run` 是零成本预演
 
-> 本仓库仅包含使用文档与 Agent Skill，CLI 源码不公开。安装请使用下方一键脚本，或从 Releases 下载单文件二进制。
-
 ---
 
 ## 最简单的方式：把下面这段复制给 Agent
@@ -23,7 +21,7 @@
      curl -fsSL https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.sh | sh
    - Windows PowerShell：
      irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
-3. 验证安装：moliai --version（应为 0.2.0）、moliai doctor（看 healthy 是否为 true）
+3. 验证安装：moliai --version（应为 0.3.0）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://test-api.aidancevid.com/api
@@ -51,7 +49,7 @@
 
 1. 打开 <https://aidancevid.com> 注册账号，并完成充值（生成任务消耗「魔力值」）
 2. 在网页上**新建一个项目**——CLI 没有 `project create`，项目只能在网页创建
-3. **不需要预装 Node.js**：一键脚本与手动下载安装的都是单文件二进制，不依赖任何运行时
+3. 仅当用 npm 方式安装时才需要 Node.js **≥ 20**（一键脚本安装的是单文件二进制，不需要 Node）
 
 ## 其他安装方式
 
@@ -77,7 +75,7 @@ irm https://raw.githubusercontent.com/Mr-cjf/moliai-cli/main/install.ps1 | iex
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.2.0`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.3.0`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
@@ -136,6 +134,15 @@ mv ./moliai-darwin-arm64 /usr/local/bin/moliai
 ```bash
 moliai --version
 ```
+
+### npm（源码方式）
+
+```bash
+npm install -g @moliai/cli
+moliai --version
+```
+
+包名是 `@moliai/cli`，安装后命令名是 `moliai`。运行时依赖只有 `commander`。这个仓库是 CLI 的源码仓库，`npm` 安装会拉取 npm 上的已发布包。
 
 ## 获取 KEY
 
@@ -230,6 +237,51 @@ moliai env remove "https://test-api.aidancevid.com/api"
 
 v1 的 `credentials.json`（顶层平铺 `baseUrl` + `token`）在第一次读取时**自动迁移**成 v2（该环境成为默认环境）并写回，无需手动操作；加 `--verbose` 可以看到迁移日志。
 
+### 本地依赖：ffmpeg（音频派生 + 分镜拼接 + 网格切图）
+
+`derive audio-separation` / `derive audio-process`（抽音轨、去音轨、截取、变速）、
+`storyboard stitch`（分镜拼图合成）与 `derive from-grid`（网格切图）在**本地**用 ffmpeg 处理媒体，
+其余命令完全不需要 ffmpeg。
+
+**CLI 不内置 ffmpeg**，请先安装系统版：
+
+```bash
+# macOS
+brew install ffmpeg
+# Ubuntu / Debian
+sudo apt update && sudo apt install -y ffmpeg
+# Windows（任选其一）
+winget install --id Gyan.FFmpeg
+# 或从 https://www.gyan.dev/ffmpeg/builds/ 下载后把 bin 目录加进 PATH
+```
+
+安装后验证：
+
+```bash
+ffmpeg -version
+moliai doctor        # ffmpeg 项应为 pass
+```
+
+不想改 PATH？用 `--ffmpeg <path>` 或 `MOLIAI_FFMPEG` 指定路径。
+
+解析优先级（**显式失败，不静默兜底**）：
+
+```
+--ffmpeg <path>            （命令行，最高）
+  > MOLIAI_FFMPEG            （环境变量）
+  > PATH 里的 ffmpeg         （系统安装）
+  > 都没有 → MOLIAI_UNSUPPORTED（退出码 5），hint 给出分平台安装指引
+```
+
+- **ffprobe 是可选的**：探测时长时能拿到 ffprobe 就用它，没有则回退解析 `ffmpeg -i` 的 stderr；
+  想指定路径可以设 `MOLIAI_FFPROBE=<path>`
+- `moliai doctor` 的 `ffmpeg` 检查项会显示来源（`系统` / `指定`）、版本与路径；缺失时是 `warn`
+  （只影响音频派生 / 分镜拼接 / 网格切图，不影响其它命令）
+- 单文件二进制与 npm 包的行为一致：都不自带 ffmpeg（产物约 110MB）
+
+> ⚖️ **音频输出固定 PCM wav**：不使用 mp3 编码器（许可证红线），变速只用原生 `atempo` 滤镜；
+> 视频一律流复制（`-c:v copy`），不解码也不编码。
+
 ## 五分钟跑通（只读，零成本）
 
 ```bash
@@ -278,6 +330,7 @@ moliai model list --type video      # 看你的账号能用哪些模型
 |---|---|---|
 | `setup` | 把 MoliAi Skill 安装到 Agent 宿主目录 | `moliai setup --agent all --dry-run` |
 | `doctor` | 环境自检：本机（Node 版本、配置目录、宿主、沙箱信号）+ 连接环境（网关、token、画布、模型清单） | `moliai doctor` |
+| `diagnose` | 画布内容只读体检（**部分实现**：只输出 `empty` + `failed`，其余三类等后端 Doctor 接口） | `moliai diagnose --out report.json` |
 | `help` | 命令树（人类可读；加 `--json` 输出结构化命令树） | `moliai help --json` |
 | `schema <command>` | 单条命令的结构（参数、默认值、可选值、输出字段） | `moliai schema run` |
 
@@ -286,7 +339,7 @@ moliai model list --type video      # 看你的账号能用哪些模型
 
 #### `doctor` 的检查项
 
-`doctor` 只判断「本机与连接环境能否用」，**不检查画布内容**（画布内容体检是 `moliai diagnose` 的职责，但该命令依赖的后端 Doctor 接口尚未实现，见「已知限制」第 6 条）。
+`doctor` 只判断「本机与连接环境能否用」，**不检查画布内容**（画布内容体检是 `moliai diagnose` 的职责，见下一节）。
 每项结果为 `pass` / `warn` / `fail`；`healthy = (fail 数 === 0)`（`warn` 不算不健康）。联网检查并行发起、单项 3 秒超时，整条命令通常在 1 秒内结束。
 
 | 检查项 | 类型 | 判定 |
@@ -302,6 +355,57 @@ moliai model list --type video      # 看你的账号能用哪些模型
 
 - `--offline`：只跑前 4 项本机检查，跳过所有联网检查（离线环境下也能自检）。
 - 无法判断时（例如 token 不是标准 JWT、没有 `exp`）显式输出 `warn` 并说明原因，不会静默当 `pass`。
+
+#### `diagnose` 的检查项（部分实现：只输出 2 类）
+
+```bash
+moliai diagnose [canvasId] [--out report.json]
+```
+
+`diagnose` 是**只读**命令：只发 `GET /canvases/{id}` 与每个失败节点各一次 `GET /tasks/{taskId}`，
+没有 `--fix`、没有 `--yes`、不自动重跑，不产生任何写入与扣费。`canvasId` 省略时用 `MOLIAI_CANVAS` 或目录绑定。
+
+**当前只实现 `empty` + `failed` 两类**，另外三类恒为空数组并在 `warnings` 里显式说明（不静默返回空）：
+
+| 分类 | 状态 | 说明 |
+|---|---|---|
+| `empty` | ✅ 已实现 | 无内容 且 无任务（`taskId` 为空）。text 节点看 `content` 是否空白；其余类型看 `mediaUrl` / `mediaId` / `content` 是否全空 |
+| `failed` | ✅ 已实现 | 节点 `status=failed` 且有 `taskId`，再查任务详情取错误码映射 `failReason` |
+| `refErrors` | ⛔ 恒为空 | 需要后端 Doctor 接口（`POST /canvases/{id}/doctor/reports` 等），当前后端未实现 |
+| `orderRisks` | ⛔ 恒为空 | 同上 |
+| `rerunnable` | ⛔ 恒为空 | 同上 |
+
+> 为什么另外三类必须是空数组：按需求 §8.4，`model_capability` / `missing_reference` / `ref_order` / `prompt_vague`
+> 这些分类**没有对应的后端错误码**，只能由提交期校验或 `diagnose` 自身的只读检查产生，且「未接入前不得输出这些分类」。
+> 因此 `diagnose` 现在不猜、不输出它们；接入后端 Doctor 接口时才补上，并会标注 `source: client_check`。
+
+`failReason` 映射（先看业务 `errorCode`，未登记再看系统级 `error.code`，都没登记才是 `unknown`）：
+
+| failReason | 来源错误码 |
+|---|---|
+| `compliance` | `SENSITIVE_CONTENT` |
+| `reference_limit` | `TOO_MANY_REFERENCE_IMAGES` |
+| `cancelled` | `TASK_CANCELLED` |
+| `invalid_request` | 提交期拦截类：`MODEL_UNSUPPORTED` / `TASK_TYPE_MISMATCH` / `COUNT_OUT_OF_RANGE` / `CONTEXT_NODE_INVALID` |
+| `unknown` | 未登记的错误码，或任务没有错误码 |
+
+输出的 `failed[].remediation` 是可直接复制执行的命令：`moliai run "<节点名>"`（节点无名称时用 nodeId）。
+
+输出结构（`--out` 落盘内容与 stdout 的 `data` 完全相同）：
+
+```json
+{ "ok": true, "data": {
+  "canvasId": "...", "reportId": "report-1a2b3c4d",
+  "empty":     [{ "nodeId": "...", "name": "..." }],
+  "failed":    [{ "nodeId": "...", "name": "...", "taskId": "...", "failReason": "compliance", "remediation": "moliai run \"镜头-03\"" }],
+  "refErrors": [], "orderRisks": [], "rerunnable": []
+}}
+```
+
+- `reportId` 由 **CLI 本地生成**（`sha256(canvasId + canvasVersion + 时间戳)` 前 8 位，格式 `report-<hash>`）；
+  后端不保存诊断报告，这个 id 只用于引用本次本地报告。
+- 节点 `status=failed` 但没有 `taskId`（无法映射 `failReason`）不会静默丢弃，会在 `warnings` 里点名列出。
+- 某个失败节点的任务详情查不到（接口报错/缺 `task` 字段）时整条命令显式失败，不伪造 `unknown`。
 
 
 ### 项目
@@ -549,8 +653,8 @@ moliai node delete --where 'hasResult=false' --max-nodes 5 --yes
 `connection create` 输出带 `duplicate`：后端幂等命中既有边时为 `true`（不推进画布版本）。
 
 **连线规则按网页端逻辑类型对齐（2026-11-20 重写）**：后端通用建线端点不校验类型矩阵，
-本地校验是唯一防线，所以 CLI 先把后端 `nodeType` 映射到网页端的 7 个逻辑类型，
-再按网页端的连线类型矩阵判定：
+本地校验是唯一防线，所以 CLI 先把后端 `nodeType` 映射到网页端的 7 个逻辑类型
+（`CanvasNodeType`），再用网页端 `connectionRules.ts` 的 `ALLOWED_CONNECTIONS` 判类型：
 
 | 后端 nodeType | 前端逻辑类型 |
 |---|---|
@@ -562,7 +666,7 @@ moliai node delete --where 'hasResult=false' --max-nodes 5 --yes
 `depth_capture` 按 `video` 处理（如 `depth_capture → text` 被拒），与网页端完全一致。
 矩阵之外的旧写法（为 4 个预设图节点单独加 target 白名单）已删除。
 
-语义层与网页端连线校验保持一致：
+语义层同步对齐前端 `isValidCanvasDataConnection`：
 
 - **超分目标**：`audio`/`voice` 源只能连视频超分；其余源的语义必须等于超分的 `superResolutionType`
   （`image` 源只能连图片超分，`video` 源只能连视频超分）
@@ -953,10 +1057,11 @@ moliai apply -f plan.json --prune --yes         # 3) 确认执行
 ### 分镜（storyboard）
 
 > 本版本提供**读取**、**两种建组**、**三个破坏性清理操作**（`dissolve` / `clear` / `to-normal`）、
-> **配置更新**（`config`）、**拼接输入快照**（`stitch-inputs`），以及**成员操作**
+> **配置更新**（`config`）、**拼接输入快照**（`stitch-inputs`）、**真正拼接**（`stitch`：
+> 本地 ffmpeg 合成 + 上传 + 登记），以及**成员操作**
 > （`add-node` / `fill` / `move` / `detach` / `transfer`）与**整组复制**（`duplicate`）。
-> 真正执行拼接（`POST .../stitches`，需要图像库做像素合并）**CLI 不提供**：
-> 该类命令不存在，拼接请在网页端完成，或见下方「已知限制」第 4 条（快照 + 外部工具）。
+> `stitch` 依赖后端 `stitch-inputs` 的像素布局新字段（`cells[]` / `outputWidth` / `outputHeight`）：
+> 这些字段为 `null` 时（旧构建）命令以 `MOLIAI_UNSUPPORTED` 明确报错，见下方「拼接」小节。
 > 另外**用户上传的图片不能放进分镜组**（缺 `sha256`，会 422），见「已知限制」第 1、2 条。
 
 | 命令 | 说明 | 最小示例 |
@@ -973,6 +1078,7 @@ moliai apply -f plan.json --prune --yes         # 3) 确认执行
 | `storyboard duplicate` ⚠️ | **整组复制**（新组 + 新成员节点 + 裁切来源身份） | `moliai storyboard duplicate "第一幕分镜" --offset-x 200 --offset-y 200 --yes` |
 | `storyboard config` | 更新布局配置（网格/比例/编号/导出档/背景色/整组平移） | `moliai storyboard config "第一幕分镜" --rows 2 --columns 3 --dry-run` |
 | `storyboard stitch-inputs` | 读取拼接输入快照（只读；`inputs` 只含有图成员） | `moliai storyboard stitch-inputs "第一幕分镜" --out snapshot.json` |
+| `storyboard stitch` | **拼接**：本地 ffmpeg 按 `cells[]` 合成 PNG → 上传 → 登记结果节点（不扣费） | `moliai storyboard stitch "第一幕分镜" -o ./分镜.png` |
 | `storyboard dissolve` ⚠️ | **破坏性**：解组（删组，成员节点保留为组外普通节点） | `moliai storyboard dissolve "第一幕分镜" --yes` |
 | `storyboard clear` ⚠️ | **破坏性**：清空成员（成员节点**软删** + 组外关联连线，组与配置保留） | `moliai storyboard clear "第一幕分镜" --yes` |
 | `storyboard to-normal` ⚠️ | **破坏性**：转普通编组（槽位信息作废，成员节点保留） | `moliai storyboard to-normal "第一幕分镜" --yes` |
@@ -1282,6 +1388,66 @@ moliai storyboard stitch-inputs "第一幕分镜" --out snapshot.json
 `--out <path>` 写出的是**原始服务端响应 JSON**（不做字段裁剪），便于后续手工拼接或留档；
 目录不存在时会自动创建。
 
+#### 拼接：`stitch`
+
+把一个分镜组的有图成员拼成一张 PNG，上传后登记为**组外普通结果节点**（不建连线、不提交生成、**不扣费**）。
+
+```bash
+# 最小用法：合成 + 上传 + 登记
+moliai storyboard stitch "第一幕分镜" -o ./第一幕.png
+
+# 保留每格下载的原图，便于核对每格取图是否正确
+moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./原图
+```
+
+| 参数 | 说明 |
+|---|---|
+| `<groupRef>` | 分镜组 groupId 或组名 |
+| `[canvasId]` | 省略时走 `MOLIAI_CANVAS` / 当前目录绑定 |
+| `-o, --out <path>` | **必填**：输出 PNG 路径（父目录自动创建，同名文件直接覆盖） |
+| `--keep-inputs <dir>` | 保留下载的原图（`slot-<slotIndex>.png`）；不给则用临时目录并在结束后清理 |
+| `--ffmpeg <path>` | ffmpeg 可执行文件路径（优先级最高；也可 `MOLIAI_FFMPEG` 或 PATH） |
+| `--client-request-id <uuid>` | 幂等键（省略时自动生成 UUID v4） |
+
+**像素口径**（复刻网页端 canvas 合成，不自行推算尺寸）：
+
+1. 输出尺寸**完全取后端** `outputWidth × outputHeight`（与登记校验同源）；
+2. 每张图先 `contain` 缩放到槽位内（**保持宽高比、不拉伸**），再 pad 到槽位的精确 `w×h`，
+   填充色 = 组 `backgroundColor`（`null` 时透明）；
+3. 再按 `cells[]` 的 `x` / `y` 顺序 `overlay` 到画布；
+4. 合成后本地复核 PNG 尺寸必须等于 `outputWidth × outputHeight`，不符即报错（不静默上传错图）。
+
+> ⚠️ **依赖后端新字段**：`stitch-inputs` 必须返回 `cells[]` / `outputWidth` / `outputHeight`
+> （`cellGap` / `padding` / `cellLongSide` 为组内持久化策略值，CLI 不重复使用）。
+> **当前 test 环境仍是旧构建，这三个字段为空** → 命令以 `MOLIAI_UNSUPPORTED` 明确报错，
+> 此时**不会下载、不会上传、不会改画布**。需后端部署后再用。
+>
+> ⚠️ 后端输出尺寸是**纯网格比例**（格子矩形按组框本地矩形轴向缩放），
+> 与网页端画布上肉眼看到的 gap/padding 观感可能有细微偏差。
+
+登记请求体（`POST /groups/{groupId}/storyboard/stitches`）：
+
+```json
+{
+  "clientRequestId": "<uuid>",
+  "expectedCanvasVersion": 7,
+  "outputResourceRef": { "kind": "UPLOAD_KEY", "storageKey": "<上传返回的最终 key>" },
+  "inputSnapshot": {
+    "config": { "...": "stitch-inputs 的 config 原样回传" },
+    "inputs": [ "..." ],
+    "inputCanvasVersion": 7
+  }
+}
+```
+
+- `expectedCanvasVersion` 与 `inputCanvasVersion` **都取 `stitch-inputs` 的 `canvasVersion`**（后端要求二者相等）；
+- `config` / `inputs` **原样回传**服务端快照；`inputs` 必须**精确等于有图成员集合**（后端逐项比对，多/少都 409）；
+- 空组（零有图成员）直接报错「分镜组没有可拼接的图」，不生成空图。
+
+输出：`groupId` / `operationId` / `clientRequestId` / `canvasId` / `canvasVersion` /
+`outputPath` / `outputWidth` / `outputHeight` / `uploadedStorageKey` / `resultNodeId` /
+`stitchId` / `inputCount` / `keptInputsDir`。
+
 ### 模型
 
 | 命令 | 说明 | 最小示例 |
@@ -1321,6 +1487,105 @@ moliai storyboard stitch-inputs "第一幕分镜" --out snapshot.json
 |---|---|---|
 | `run` | 在画布节点上提交一次生成任务（**唯一扣费命令**） | `moliai run <nodeId> --dry-run --model <k> --prompt "<p>"` |
 | `extract` | 从 text 节点提取角色/场景/物品，并把结果落成画布节点（`--kind` 必填） | `moliai extract <nodeId> --kind character --wait 120` |
+
+#### `run --explain`：看清每个参数从哪来（零写入）
+
+`--explain` 在 `--dry-run` 的基础上，额外输出**将发出的请求体（已脱敏）**与**每个参数的来源**，
+用于 Agent 自查「为什么是这个值」。
+
+```bash
+moliai run 26849bd1-... --model qwen-image::qwen-image-2.1 \
+  --set aspectRatio=9:16 --set resolution=1K --set generationMode=normal \
+  --dry-run --explain
+```
+
+> - `--explain` **强制走 dry-run 路径**：不写画布、不建任务、不扣费（NFR-20）。
+>   批量模式下 `--explain` 也会忽略 `--execute` 并在 `warnings` 里说明，本次只输出预览。
+> - 输出在原有 dry-run 结构上多一个 `data.explain`；dry-run 其余字段不变。
+
+`data.explain` 结构：
+
+```json
+{
+  "request": {
+    "taskType": "image",
+    "model": "qwen-image::qwen-image-2.1",
+    "prompt": "橘子，很多橘子",
+    "options": { "aspectRatio": "9:16", "resolution": "1K", "generationMode": "normal" },
+    "count": 1,
+    "targetNodeId": "26849bd1-...",
+    "clientRequestId": "f316a100-..."
+  },
+  "parameterSources": {
+    "canvasId": "binding",
+    "nodeId": "explicit",
+    "taskType": "node-config",
+    "model": "explicit",
+    "prompt": "node-config",
+    "count": "cli-default",
+    "clientRequestId": "cli-default",
+    "aspectRatio": "explicit",
+    "resolution": "explicit",
+    "generationMode": "explicit"
+  },
+  "steps": [
+    { "step": "resolve-canvas", "source": "binding", "detail": "环境变量 MOLIAI_CANVAS" },
+    { "step": "resolve-node", "source": "explicit", "detail": "命令行位置参数（节点 id 或名称）" },
+    { "step": "resolve-prompt", "source": "node-config", "detail": "node.promptDraft" },
+    { "step": "resolve-parameters", "source": "mixed", "detail": "--set 3 项，节点 modelParams 2 项" },
+    { "step": "build-request", "source": "mixed" },
+    { "step": "validate-params", "source": "schema", "detail": "按模型契约 qwen-image::qwen-image-2.1 校验" }
+  ],
+  "warnings": []
+}
+```
+
+**参数来源的七类取值**：
+
+| 来源 | 含义 | 判定方式 |
+|---|---|---|
+| `explicit` | 用户在命令行显式传入 | `--model` / `--prompt` / `--set k=v` / `--count` / 位置参数 |
+| `binding` | 环境变量或工作目录绑定 | `MOLIAI_CANVAS` / `.moliai/config.json` |
+| `schema-default` | 模型参数契约声明的默认值 | 值等于 `schema.properties.<name>.default`，且**不是** `--set` 或节点继承来的 |
+| `upstream-inferred` | 画布连线/上游节点推断 | `contextNodeIds`（仅 `group run` / 批量连线推导） |
+| `node-config` | 节点自身已保存的配置 | `node.modelKey` / `generationModel` / `promptDraft` / `generationPrompt` / `content` / `modelParams` |
+| `cli-default` | CLI 内置缺省值 | `--count` 缺省 `1`、`clientRequestId` 自动生成的 UUID |
+| `unknown` | 无法判定 | 该模型没有参数契约，或值既非显式也非节点继承、契约也没声明默认值 |
+
+> **`explicit` 优先于 `schema-default`**：用户显式传了与契约默认值相同的值，仍标 `explicit`
+> （他确实传了，不该被说成"默认值"）。
+
+**schema 覆盖限制（必须知道）**：参数契约只覆盖**已配置 `parameterSchema` 的 modelKey**（当前目录下
+`moliai model list` 里 `schemaAvailable=true` 的模型，如 `qwen-image::qwen-image-2.1`、
+`tokenproto::doubao-seedance-2-5-260628`）。其它模型没有契约：
+
+```json
+"warnings": [
+  "schema 不可得：wetoken::bytedance-seedance-2-0-260128 该模型未配置参数契约（schema 未配置），相关参数来源标记为 unknown"
+]
+```
+
+此时 `schema-default` 这一路**不可得**，CLI 标 `unknown` + warning，**不会猜**（也绝不静默省略）。
+`validate-params` 一步的 `source` 会随之变成 `capabilities`（本地 capabilities 校验）或 `none`（无任何校验依据）。
+
+**prepare 被拒时也会给出 explain**：`--explain` 下若 prepare 返回 400（如缺必填参数），
+错误信封的 `error.details.explain` 里同样带 `request` / `parameterSources` / `steps` / `warnings`，
+并明确列出「契约声明必填但本次未提供」的参数（含其契约默认值），便于一次改对：
+
+```json
+"warnings": [
+  "契约 qwen-image::qwen-image-2.1 声明这些参数必填，但本次既未显式传入也未从节点继承：generationMode（契约默认值 \"normal\"，但后端不会自动补）、resolution（契约默认值 \"1K\"，但后端不会自动补）；prepare 很可能被后端拒绝"
+]
+```
+
+> 注意：**后端不会自动补契约默认值**，`--set`/节点上没有的必填参数不会被 CLI 偷偷填上；
+> 想让 `schema-default` 出现在请求里，需要显式传值（此时标 `explicit`）。
+
+**脱敏**：`request` 中 key 名匹配 `key|token|secret|password|credential` 的值替换为 `***`
+（`modelKey` 是模型标识，不属于敏感字段，保留原值；`clientRequestId` 是 UUID，无敏感性，不脱敏）。
+
+**批量模式**：`run --where ... --explain` 在每个 `nodes[]` 里附加同名 `explain`（批量预览不调 prepare，
+`parameterSources` 只反映 CLI 构造的请求体）。
 
 #### `run --where` / `run --rerun-failed`：按选择器批量生成
 
@@ -1422,9 +1687,9 @@ moliai extract <text节点id> --kind scene --no-apply
 
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
-| `derive list` | 列出全部派生场景与 CLI 支持状态（12 项） | `moliai derive list` |
+| `derive list` | 列出全部派生场景与 CLI 支持状态（13 项） | `moliai derive list` |
 | `derive depth-capture` | 从 video / 超分视频 / 深度捕捉节点创建 `depth_capture` 节点 | `moliai derive depth-capture <video节点> --dry-run` |
-| `derive video-continuation` | 从 video 节点创建视频续写占位节点（`mediaUrl` 为空） | `moliai derive video-continuation <video节点> --model <k> --from 0 --to 4 --dry-run` |
+| `derive video-continuation` | 从 video 节点创建视频续写占位节点（`mediaUrl` 为空）；`--run` 时本地裁切源视频并上传片段走 `frontend_clip` 续写 | `moliai derive video-continuation <video节点> --model <k> --from 0 --to 4 --dry-run` |
 | `derive panorama` | 从图片节点派生 720° 全景图节点（`taskType=panorama_image`） | `moliai derive panorama <image节点> --model tencent::gpt-image-2` |
 | `derive three-view` | 从图片节点派生角色三视图节点（`layoutPreset=画面版式:三视图`） | `moliai derive three-view <image节点>` |
 | `derive nine-grid` | 从图片节点派生多机位九宫格节点（`anglePreset=机位视角:九宫格`） | `moliai derive nine-grid <image节点>` |
@@ -1432,6 +1697,9 @@ moliai extract <text节点id> --kind scene --no-apply
 | `derive super-resolution` | 从 image / video 节点派生超分节点（`super-resolution-image` / `super-resolution-video`） | `moliai derive super-resolution <image节点> --size 1080p --dry-run` |
 | `derive image-edit` | 从图片节点派生涂鸦重绘结果节点（`--doodle` 是「源图+涂鸦」完整整图） | `moliai derive image-edit <image节点> --doodle ./doodle.png --dry-run` |
 | `derive video-edit` | 从 video 节点派生视频编辑结果节点（Worker 新建 `video_edit` 节点） | `moliai derive video-edit <video节点> --model <k> --resolution 720p` |
+| `derive audio-separation` | 音视频分离：本地 ffmpeg 抽音轨 + 去音轨，上传后一次性建两个派生节点 | `moliai derive audio-separation <video节点>` |
+| `derive audio-process` | 音频处理：本地 ffmpeg 截取 / 保调变速，上传后建派生音频节点 | `moliai derive audio-process <audio节点> --speed 1.5` |
+| `derive from-grid` | 网格切图：本地 ffmpeg 按 rows × columns 切分图片，建 N 个 image 节点 + N 条连线（不扣费） | `moliai derive from-grid <image节点> --rows 2 --columns 2` |
 
 `derive list` 输出 `scenes[]`（`scene` / `supported` / `command` / `endpoint` / `note`）+ `supportedCount` / `totalCount`；
 未支持的场景给出原因与替代方案（多数可用 `moliai run` 间接实现）。
@@ -1446,6 +1714,15 @@ moliai derive video-continuation <video节点> \
   --model wetoken::bytedance-seedance-2-5-260628 --from 0 --to 4 --dry-run
 moliai derive video-continuation <video节点> \
   --model wetoken::bytedance-seedance-2-5-260628 --from 0 --to 4
+# --run 走 frontend_clip：本地裁切 [--from,--to) → 上传片段 → 提交续写生成
+# --duration 是「续写输出秒数」（4–30 整数，= 计费秒数），不是选段长度
+moliai derive video-continuation <video节点> \
+  --model wetoken::bytedance-seedance-2-0-260128 \
+  --from 0 --to 4 --duration 5 --resolution 720p --run --max-cost 100
+# 想检查裁切结果/更快？--keep-clip 保留 mp4；--fast 用 -c copy（不重编码，端点会吸附包边界）
+moliai derive video-continuation <video节点> \
+  --model wetoken::bytedance-seedance-2-0-260128 \
+  --from 0 --to 4 --duration 4 --keep-clip ./clip.mp4 --dry-run
 ```
 
 关键约束：
@@ -1462,6 +1739,17 @@ moliai derive video-continuation <video节点> \
   选段满足 `0 <= start < end <= 源时长`。`sourceDurationMs` 由节点 `duration`（秒）×1000 得到。
 - 视频续写创建前 CLI 会先调 `reference-media/prepare` 取 `sourceExpectations`（后端写事务强制要求，
   缺它会 409 `CANVAS_REFERENCE_RELATION_REQUIRED`）。
+- **`--run` 的续写链路（`frontend_clip`）**：下载源视频 → 本地 ffmpeg 裁切 `[--from, --to)` → 上传片段拿
+  `clipMediaId`（storageKey，形态 `images/doodles/{canvasId}-{13位时间戳}-{8位hex}.mp4`）→
+  `POST /canvases/{id}/generate` 带齐 `options.duration` / `options.resolution` / `sourceExpectations` /
+  `videoContinuation{inputMode, clipMediaId, clipDurationMs, extensionDurationSeconds}`。
+  因此 **`--run` 必须有系统 ffmpeg**（`--dry-run` 不做下载与裁切，不需要）。
+- **`--duration <秒>`** 是续写**输出**秒数（4–30 整数，= `options.duration` = `extensionDurationSeconds`，
+  也是**计费秒数**）；与选段长度 `--to - --from` 无耦合。`--run` 时必填。
+- **`--resolution`** 默认 `720p`（只接受 `480p` / `720p`），直接决定每秒单价。
+- **裁切精度**：默认**重编码**（`libx264 -crf 20` + `aac`），起点精确到帧；`--fast` 改用 `-c copy`
+  （不重编码、更快、保留源码率，但端点只能落在包/关键帧边界，实测同区间 4.000 秒 → 4.1 秒，
+  且偏差随源 GOP 增大）。`--keep-clip <path>` 把裁切出的 mp4 另存出来检查（默认临时文件用完即删）。
 - 两个命令默认只创建节点，**不提交生成、不扣费**；`--run` 才会提交生成任务（会扣费），
   提交前打印预估消耗，作业记录可用于 `moliai wait <jobId>`。
 - `--dry-run` 零网络写入（不调 prepare、不建节点），只输出将要提交的 `operationId`、坐标与连线参数。
@@ -1684,6 +1972,97 @@ moliai derive video-edit <video节点> --model tokenproto::doubao-seedance-2-5-2
 - **`--resolution` 只接受小写 `480p` / `720p`**，且 `--run` 时必须显式给出（CLI 不替你选贵档位）。
 - 素材上限：图片 ≤30、视频 ≤10、音频 ≤10、总数 ≤50（后端硬校验）。
 
+#### 音视频分离（`audio-separation`）与音频处理（`audio-process`）
+
+两个场景都在**本地**用 ffmpeg 处理完再上传，最后调事务端点一次性落库。
+**只创建节点与派生连线，不提交生成任务、不扣费**（后端这两个端点没有计费分支）。
+
+```bash
+# 音视频分离：一个视频节点 → 无声视频节点 + 分离音频节点 + 两条派生连线
+moliai derive audio-separation <video节点> --dry-run     # 先看步骤与坐标（零写入）
+moliai derive audio-separation <video节点>               # 真跑（不扣费）
+
+# 音频处理：截取（区间至少 0.5 秒）
+moliai derive audio-process <audio节点> --trim-start 0.5 --trim-end 3.7
+
+# 音频处理：变速（保调，0.1–4.0；只改时长，不改音高）
+moliai derive audio-process <audio节点> --speed 1.5
+
+# 输入是超分视频节点也可以分离
+moliai derive audio-separation <超分视频节点> --name "对白-无声" --x 3000 --y 800
+```
+
+| 场景 | 端点 | 产出 |
+|---|---|---|
+| `audio-separation` | `POST /canvases/{id}/derivations/video-audio-separation` | 无声 `video` 节点 + `audio` 节点 + 2 条 `derivation` 连线（`derivationType=video_audio_separation`） |
+| `audio-process` | `POST /canvases/{id}/derivations/audio-processing` | 结果 `audio` 节点 + 1 条 `derivation` 连线（`derivationType=audio_processing`） |
+
+执行顺序（两个场景一致）：
+
+1. 下载源节点媒体（节点 `mediaUrl` 是裸 storageKey，CLI 先归一成 CDN 直链再下）
+2. ffmpeg 本地处理（分离：抽音轨 + 去音轨；处理：截取或变速）
+3. 上传处理结果（四段式分片上传 → 拿到 `storageKey` + `mediaId`）
+4. 提交事务端点（用上传返回的 CDN 地址作为节点 `mediaUrl`）
+
+关键约束：
+
+- **分离的 `audio.mediaId` 是硬校验**：后端要求它指向 `media_objects` 里已登记、mime 为 `audio/*` 的记录，
+  否则 400 `INVALID_PARAMS:分离音频未登记，请重新上传`。CLI **总是先上传**再提交，不会传空 `mediaId`。
+- **音频输出只能是 wav**：后端上传白名单（`AudioFormatPolicy`）把音频格式硬编码为 `{wav, mp3}`，
+  m4a/aac/ogg/flac 会被 400 `DOODLE_IMAGE_TYPE_INVALID` 拒绝；而 mp3 编码器按许可证红线不使用
+  → 唯一组合是 **PCM wav**（无损）。代价是体积大（48kHz 立体声 s16 约 **1.4MB / 10 秒**）。
+- **变速是保调的**：`atempo` 是 WSOLA 时间伸缩，只改时长不改音高（实测 440Hz 正弦 2 倍速后基频仍 ≈438Hz）。
+  倍率 0.1–4.0（与后端白名单一致），超出单级 0.5–2.0 时 CLI 自动串联多级（`atempoChain`）。
+- **截取区间**：`--trim-start` / `--trim-end` 必须成对给出，`end > start` 且差值 **≥ 0.5 秒**
+  （CLI 与后端同口径校验，零上传前就拦）。`-ss` 在 `-i` 之前 + `-t` 取长度，避免 `-to` 的时间基准歧义。
+- **截取与变速互斥**（后端 `processing.type` 只接受单一类型）；两个都不给会显式报错。
+- **连线 `arrow` 恒为 `false`**：后端对 `audio-processing` 强制要求（`true` → 400）。
+- **幂等键是 `operationId`**（`--operation-id` / 别名 `--client-request-id`，省略自动生成 UUID）：
+  同 `operationId` 重试返回既有结果；同 `operationId` 不同请求体 →
+  409（`AUDIO_PROCESSING_OPERATION_CONFLICT`）。
+- **源节点类型**：分离必须是 `video` 或 `super_resolution(superResolutionType=video)`；
+  处理必须是 `audio`（`voice` 节点不是 `audio`，会被后端 400 `AUDIO_PROCESSING_SOURCE_TYPE_INVALID`）。
+- **定位**：无声视频按标准派生定位（源节点右侧避让），分离音频放在同一列的下一个空位
+  （源节点正下方那列）；`--x/--y` 同时给出时不避让。
+- **失败会保留本地工作目录**（下载与处理产物），成功才按 `--keep-work-files` 决定是否保留，
+  `workDir` 字段回显保留路径。
+- `--expected-version <n>` 传画布结构版本基线，不匹配时 409（与其它派生场景一致）。
+
+#### 网格切图（`from-grid`）
+
+把一张图片按 `rows × columns` 切成 N 张，**上传后逐张创建 `image` 节点，并从源节点各建一条
+manual 连线**。只建节点与连线，**不提交生成、不扣费**。
+
+```bash
+# 2×2 切图：源图右侧自动定位，创建 4 个 image 节点 + 4 条 manual 连线
+moliai derive from-grid <image节点> --rows 2 --columns 2
+
+# 指定首个结果节点位置（其余按网格顺延）
+moliai derive from-grid <image节点> --rows 3 --columns 3 --x 200 --y 800
+
+# 源图格子之间本身有间隔时：--gap 告诉 CLI 每格之间空了多少像素（间隔不进入产物）
+moliai derive from-grid <image节点> --rows 2 --columns 2 --gap 12
+```
+
+| 参数 | 说明 |
+|---|---|
+| `<nodeId\|nodeName>` | 源节点，**必须是 `image`** 且 `mediaUrl` 非空 |
+| `--rows <n>` / `--columns <n>` | **必填**，≥1 的整数 |
+| `--x/--y` | 首个结果节点坐标；都不给时按源节点右侧避让算法定位 |
+| `--gap <px>` | 源图格子之间的间隔像素（默认 0），≥0 的整数 |
+| `--ffmpeg <path>` | ffmpeg 可执行文件路径（优先级最高；也可 `MOLIAI_FFMPEG` 或 PATH） |
+
+切图口径（`gap=0`）：按「左/右边界各自取整后相减」切分，**余数归最后一格**，
+因此所有格子拼起来正好覆盖源图、不丢像素也不重叠。`gap>0` 时先扣掉 `count-1` 个间隔再等分，
+间隔不进入产物。
+
+输出：`sourceNodeId` / `sourceName` / `rows` / `columns` / `gap` / `sourceWidth` / `sourceHeight` /
+`cellWidth` / `cellHeight` / `createdNodeCount` / `createdConnectionCount` / `nodes[]`
+（每项含 `nodeId` / `connectionId` / `x` / `y` / `storageKey` / `mediaId` / `cropX` / `cropY` / `cropWidth` / `cropHeight`）。
+
+> 节点与连线**没有幂等键**：重复执行会产生重复节点/连线。中途失败时错误 `details.createdNodes`
+> 列出已创建的节点（不自动回滚，避免制造新的不确定性），核对后用 `node delete` 清理。
+
 ### 长任务
 
 | 命令 | 说明 | 最小示例 |
@@ -1786,7 +2165,7 @@ moliai jobs --label agent-a                    # 只看自己提交的作业
 # 1) 系统通知（Windows Toast / macOS 通知中心 / Linux notify-send）
 moliai run "主图" --notify desktop ...
 
-# 2) 执行一条本地命令（可接自定义消息工具）
+# 2) 执行一条本地命令（可接团队自己的消息工具）
 moliai run "主图" --notify 'cmd:curl -s -X POST http://localhost:8080/notify -d "$MOLIAI_STATUS"' ...
 moliai wait job_20261118T101530_a3f2c1 --max 90 --notify 'cmd:echo $MOLIAI_JOB_ID >> ~/done.log'
 
@@ -1881,7 +2260,7 @@ moliai setup --agent all --check     # 复核
 ```
 
 默认写入 `~/.agents/skills/moliai-cli-skill` 与 `~/.claude/skills/moliai-cli-skill`，安装后重启宿主会话生效。
-也可以用支持 Skill 目录的通用方式安装：把 `moliai setup --agent all` 写入的 `~/.agents/skills/moliai-cli-skill/` 整个目录复制到宿主的 skills 目录。
+也可以用支持 Skill 目录的通用方式安装：把 npm 包里的 `node_modules/@moliai/cli/skills/moliai-cli-skill/` 整个目录复制到宿主的 skills 目录。
 
 给 Agent 看的安装说明见 [INSTALL-FOR-AGENTS.md](./INSTALL-FOR-AGENTS.md)。
 
@@ -1972,28 +2351,39 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 - **原因**：`MediaObjectPersistenceService.persist` 不写 `sha256`，而槽位身份校验 `CanvasStoryboardResourceResolver.toIdentity` 要求 `sha256` 非空。
 - **怎么办**：等后端补齐 sha256 写入与存量回填；临时改用 AI 生成的图片。
 
-### 4. 没有 `storyboard stitch`（真正的像素拼接）
+### 4. `storyboard stitch` 依赖后端新增的像素布局字段（当前 test 环境未部署）
 
-- **现象**：该命令不存在。
-- **原因**：后端 `POST /storyboard/stitches` 只做「登记 + 校验」，不拼像素；像素合成需客户端引入图像库（sharp / canvas），体积与依赖成本高。
-- **怎么办**：`moliai storyboard stitch-inputs <组> --out snapshot.json` 导出冻结快照，用外部工具（ImageMagick / Python PIL）拼图后再登记。
+- **现象**：`moliai storyboard stitch <组> -o out.png` → `MOLIAI_UNSUPPORTED`：
+  「当前后端未提供拼接像素布局（stitch-inputs 缺少 cells/outputWidth/outputHeight）」。
+- **原因**：CLI 按后端 `stitch-inputs` 新增的 `cells[]` / `outputWidth` / `outputHeight` 合成像素
+  （`cellGap` / `padding` / `cellLongSide` 为组内持久化策略值）；旧构建不返回这些字段时
+  **不本地推算几何**，直接显式失败（不下载、不上传、不写画布）。
+- **怎么办**：等后端部署新契约后再用；临时排查可用
+  `moliai storyboard stitch-inputs <组> --out snapshot.json` 导出快照自行合成。
+- **注意**：即使部署后，后端输出尺寸是**纯网格比例**（按组框本地矩形轴向缩放），
+  与网页端肉眼看到的 gap/padding 观感可能有细微偏差。
 
-### 5. 没有 `storyboard create --from-grid`
+### 5. 网格切图是 `derive from-grid`，不是 `storyboard create --from-grid`
 
-- **现象**：该选项不存在。
-- **原因**：需要读取源图像素、按网格切格、计算裁切矩形，并校验 `sourceResourceIdentity`（mediaId / sha256 / width / height）。
-- **怎么办**：用 `--from-nodes`（框选已有节点建组）或 `--from-group`（普通组转分镜组）。
+- **现象**：`moliai storyboard create --from-grid` 不存在。
+- **原因**：分镜建组端点不接受「切图来源」语义；切图属于画布派生（建节点 + 建连线），
+  因此实现为 `moliai derive from-grid <image节点> --rows N --columns N`（本地 ffmpeg 切图）。
+- **怎么办**：切图用 `moliai derive from-grid`；把切出来的图建成**分镜组**再执行
+  `moliai storyboard create --from-nodes <切出的节点...>`。
 
-### 6. 没有 `diagnose`
+### 6. `diagnose` 只有部分实现（只输出 `empty` + `failed`）
 
-- **现象**：`moliai diagnose` 不存在。
-- **原因**：该命令要求直接映射后端 Doctor 三段接口（`/doctor/reports` 等），**后端零实现**。
-- **怎么办**：用 `moliai doctor`。两者职责不同：
+- **现象**：`moliai diagnose` 可以跑，但 `refErrors` / `orderRisks` / `rerunnable` 恒为空数组。
+- **原因**：这三类要求直接映射后端 Doctor 三段接口（`/doctor/reports` 等），**后端零实现**；
+  按需求 §8.4「未接入前不得输出这些分类」，暂时不输出，并在 `warnings` 里显式说明原因（不静默）。
+- **怎么办**：`empty` / `failed` 现在可用（来自画布节点状态与任务错误码，纯只读）。
+  引用错误 / 顺序风险 / 可重跑请等后端 Doctor 接口；日常环境自检仍用 `moliai doctor`。
 
 | 命令 | 检查什么 | 状态 |
 |---|---|---|
 | `moliai doctor` | 本机 + 连接环境（版本、登录、网关可达、画布可用、模型清单） | ✅ 可用 |
-| `moliai diagnose` | **画布内容**（空节点、失败节点、引用错误、顺序风险） | ❌ 后端未实现 |
+| `moliai diagnose` | **画布内容**：`empty` / `failed` | ✅ 可用 |
+| `moliai diagnose` | **画布内容**：引用错误 / 顺序风险 / 可重跑 | ❌ 后端未实现（恒为空 + warning） |
 
 ### 7. `run` 不支持部分节点类型
 
@@ -2021,8 +2411,9 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 - **原因**：创建端点按 `provider::modelId` 查后端 `standards/capabilities/image-video.catalog.json` 的
   `capabilities.video.referenceLimits`（未命中时再看路由组的组级 `referenceLimits`）。该模型当前只有定价、
   没有完整的 reference profile，因此报价能成功（`/billing/estimate` 只查定价）而创建被拒。
-- **计费口径**：续写按输出秒数计费，最低 4 秒 = 100 魔力值（25/秒）；`--dry-run --run` 的 `estimatedCost`
-  来自定价表，仅代表「若能创建会花多少」。
+- **计费口径**：续写按**输出秒数**（`extensionDurationSeconds`）计费，选段只做合法性校验、不参与计费；
+  计费档恒为 `reference` 档，故必须显式给 `--resolution`（720p / 480p）。实测 720p reference 档
+  16 魔力值/秒（`--duration 4` → 64，`--duration 5` → 80）。
 - **怎么办**：等后端补齐该模型的 `referenceLimits` 后再 `--run`；`--dry-run` 与节点预览不受影响。
 
 ### 11. 其他已知缺口
@@ -2043,13 +2434,17 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 - 提交问题反馈时，请附上错误响应中的 `code` 与 `traceId`，便于定位
 - 请勿在反馈中粘贴 API KEY、token 或完整凭据
 
+## 测试交付说明
+
+面向测试同学的安装、登录、命令速查与已知限制说明，见 [docs/test-delivery-guide.md](docs/test-delivery-guide.md)。
+
 ## 许可证
 
 本仓库包含两类许可：
 
 | 范围 | 许可 |
 |---|---|
-| CLI 本体（可执行文件、构建产物） | **专有软件，仅授权使用**。禁止修改、再分发、反向工程。详见 [LICENSE](LICENSE) |
+| CLI 本体（`src/`、构建产物、可执行文件） | **专有软件，仅授权使用**。禁止修改、再分发、反向工程。详见 [LICENSE](LICENSE) |
 | Agent Skill（`skills/` 目录） | **MIT License**。可自由使用、修改、分发。详见 [skills/moliai-cli-skill/LICENSE](skills/moliai-cli-skill/LICENSE) |
 
 第三方依赖的许可声明见 [NOTICE](NOTICE)。

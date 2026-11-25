@@ -2525,7 +2525,7 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 
 ## 测试交付说明
 
-面向测试同学的安装、登录、命令速查与已知限制说明，见 [docs/test-delivery-guide.md](docs/test-delivery-guide.md)。
+面向测试同学的安装、登录、命令速查与已知限制说明，见交付说明（内部文档，不随本仓库分发）。
 
 ## 许可证
 

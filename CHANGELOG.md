@@ -6,6 +6,12 @@
 
 （无）
 
+## [0.7.1] - 2026-11-25
+
+### 变更
+
+- `project create` 的默认模式改为 `canvas`（省略 `--mode` 时不再使用后端默认的 `novel-promotion`）。`canvas` 模式会同时创建一张同名画布，更符合 CLI 的使用场景；需要旧行为时显式传 `--mode novel-promotion`。
+
 ## [0.7.0] - 2026-11-25
 
 ### 新增

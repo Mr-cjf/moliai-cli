@@ -77,7 +77,7 @@ function Get-RemoteFile([string]$Url, [string]$OutFile) {
             $curlArgs = @('-fL', '--retry', '2', '--connect-timeout', '15', '--progress-bar', '-o', $OutFile, $Url)
         }
         else {
-            $curlArgs = @('-fsS', '--retry', '2', '--connect-timeout', '15', '-o', $OutFile, $Url)
+            $curlArgs = @('-fLsS', '--retry', '2', '--connect-timeout', '15', '-o', $OutFile, $Url)
         }
         & $curl.Source @curlArgs
         if ($LASTEXITCODE -ne 0) {

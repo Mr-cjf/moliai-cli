@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  MoliAi CLI 一键安装脚本（Windows x64）
+  MoliAi CLI 一键安装脚本（Windows x64；ARM64 通过系统 x64 模拟运行）
 
 .DESCRIPTION
   用法（PowerShell）：
@@ -53,19 +53,33 @@ function Assert-WindowsX64 {
         throw '不支持 32 位 Windows。官方构建仅提供：Windows x64、macOS arm64、macOS x64、Linux x64'
     }
     $arch = $env:PROCESSOR_ARCHITECTURE
-    if ($arch -eq 'ARM64') {
-        throw '暂不支持 Windows ARM64。官方构建仅提供：Windows x64、macOS arm64、macOS x64、Linux x64'
+    # ARM64 机器上跑 x64 模拟的 PowerShell 时，真实架构在 PROCESSOR_ARCHITEW6432
+    $archWow = $env:PROCESSOR_ARCHITEW6432
+    if ($arch -eq 'ARM64' -or $archWow -eq 'ARM64') {
+        # 无原生 ARM64 构建，但 Win11 ARM 的 x64 模拟可用，故只警告不拦截
+        Write-Warning '检测到 Windows ARM64：未提供原生 ARM64 构建，将安装 x64 版本并通过系统 x64 模拟运行'
+        Write-Host "平台：Windows / ARM64（x64 模拟） -> $AssetName"
     }
-    if ($arch -and $arch -ne 'AMD64') {
+    elseif ($arch -and $arch -ne 'AMD64') {
         throw "不支持的 Windows 架构：$arch。官方构建仅提供：Windows x64、macOS arm64、macOS x64、Linux x64"
     }
-    Write-Host "平台：Windows / x64 -> $AssetName"
+    else {
+        Write-Host "平台：Windows / x64 -> $AssetName"
+    }
 }
 
 function Get-RemoteFile([string]$Url, [string]$OutFile) {
     $curl = Get-Command 'curl.exe' -ErrorAction SilentlyContinue
     if ($curl) {
-        & $curl.Source '-fL' '--retry' '2' '--connect-timeout' '15' '-o' $OutFile $Url
+        # 交互式终端用单行进度条，重定向/日志场景静默，避免进度刷屏
+        $isInteractive = -not [Console]::IsOutputRedirected
+        if ($isInteractive) {
+            $curlArgs = @('-fL', '--retry', '2', '--connect-timeout', '15', '--progress-bar', '-o', $OutFile, $Url)
+        }
+        else {
+            $curlArgs = @('-fsS', '--retry', '2', '--connect-timeout', '15', '-o', $OutFile, $Url)
+        }
+        & $curl.Source @curlArgs
         if ($LASTEXITCODE -ne 0) {
             throw "下载失败，检查网络或代理：$Url"
         }
@@ -84,7 +98,16 @@ function Get-RemoteFile([string]$Url, [string]$OutFile) {
     }
 }
 
+# 输出被重定向（irm ... | iex > install.log）时控制台编码是 OEM/GBK，中文日志会写成 GBK。
+# 仅在重定向时切 UTF-8，并在 finally 中恢复，避免污染调用方的 PowerShell 会话。
+$script:OriginalOutputEncoding = $null
+
 try {
+    if ([Console]::IsOutputRedirected) {
+        $script:OriginalOutputEncoding = [Console]::OutputEncoding
+        [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    }
+
     Write-Host ''
     Write-Host "MoliAi CLI 安装器（版本 $Version）" -ForegroundColor White
     Write-Host ''
@@ -183,6 +206,10 @@ catch {
     throw
 }
 finally {
+    # 恢复调用方会话的控制台输出编码（irm | iex 在用户当前会话执行，不能污染）
+    if ($null -ne $script:OriginalOutputEncoding) {
+        [Console]::OutputEncoding = $script:OriginalOutputEncoding
+    }
     if ($TempDir -and (Test-Path -LiteralPath $TempDir)) {
         Remove-Item -LiteralPath $TempDir -Recurse -Force -ErrorAction SilentlyContinue
     }

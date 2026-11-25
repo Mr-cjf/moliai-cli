@@ -198,10 +198,29 @@ esac
 printf '\n'
 if [ "$in_path" = "yes" ]; then
   ok "$INSTALL_DIR 已在 PATH 中"
+elif command -v moliai >/dev/null 2>&1; then
+  # 当前 shell 已能解析到 moliai（例如配置文件已被 source 过），不再提示
+  :
 else
-  printf '[注意] %s 不在 PATH 中\n' "$INSTALL_DIR"
-  printf '       请把下面这行追加到 shell 配置文件（~/.bashrc、~/.zshrc 或 ~/.profile）后重开终端：\n\n'
-  printf '       export PATH="%s:$PATH"\n\n' "$INSTALL_DIR"
+  # 检查常见 shell 配置文件是否已有等价设置，避免重复追加导致同一目录出现两次
+  rc_found=""
+  for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.bash_profile" "$HOME/.zprofile"; do
+    [ -f "$rc" ] || continue
+    if grep -qF -- "$INSTALL_DIR" "$rc" 2>/dev/null \
+      || grep -qE '(\$HOME|\$\{HOME\}|~)/\.local/bin|\.local/bin[^ ]*PATH|PATH[^ ]*\.local/bin' "$rc" 2>/dev/null; then
+      printf '  %s 中已存在 PATH 设置\n' "$rc"
+      [ -n "$rc_found" ] || rc_found="$rc"
+    fi
+  done
+
+  if [ -n "$rc_found" ]; then
+    printf '[注意] %s 尚未在当前 shell 的 PATH 中\n' "$INSTALL_DIR"
+    printf '       配置文件已包含该路径，重开终端或执行 source %s 即可生效\n\n' "$rc_found"
+  else
+    printf '[注意] %s 不在 PATH 中\n' "$INSTALL_DIR"
+    printf '       未在 shell 配置文件中找到对应设置，请追加下面这行后重开终端：\n\n'
+    printf '       export PATH="%s:$PATH"\n\n' "$INSTALL_DIR"
+  fi
 fi
 
 # ---------------------------------------------------------------- 版本验证

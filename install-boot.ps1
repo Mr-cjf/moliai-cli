@@ -14,7 +14,13 @@ $ErrorActionPreference = 'Stop'
 $installerUrl = 'https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1'
 $tempFile = Join-Path ([System.IO.Path]::GetTempPath()) ('moliai-install-' + [guid]::NewGuid().ToString('N') + '.ps1')
 
+$script:oldProgress = $ProgressPreference
+
 try {
+    # Windows PowerShell 5.1 renders a progress bar for Invoke-WebRequest, which
+    # floods the host when this script is piped into Invoke-Expression.
+    $ProgressPreference = 'SilentlyContinue'
+
     Write-Host '==> Downloading installer...'
     Invoke-WebRequest -Uri $installerUrl -OutFile $tempFile -UseBasicParsing
 
@@ -32,6 +38,7 @@ try {
     Invoke-Expression $code
 }
 finally {
+    $ProgressPreference = $script:oldProgress
     if (Test-Path -LiteralPath $tempFile) {
         Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
     }

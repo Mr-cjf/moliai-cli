@@ -6,13 +6,13 @@
 #   curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.sh | sh
 #
 # 可用环境变量覆盖：
-#   MOLIAI_VERSION      版本号，默认 v0.6.0206（形如 v0.6.0219，含 v 前缀）
+#   MOLIAI_VERSION      版本号，默认 v0.6.0（形如 v0.6.0，含 v 前缀）
 #   MOLIAI_INSTALL_DIR  安装目录，默认 $HOME/.local/bin（不可写时用 $HOME/bin）
 #
 set -eu
 
 REPO="Mr-cjf/moliai-cli"
-VERSION="${MOLIAI_VERSION:-v0.6.0353}"
+VERSION="${MOLIAI_VERSION:-v0.6.0}"
 BINARY=""
 TMP_DIR=""
 

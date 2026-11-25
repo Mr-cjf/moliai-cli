@@ -21,7 +21,7 @@
      curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.sh | sh
    - Windows PowerShell：
      irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.6.0744）、moliai doctor（看 healthy 是否为 true）
+3. 验证安装：moliai --version（应为 0.6.0）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://test-api.aidancevid.com/api
@@ -77,7 +77,7 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install-boot.p
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.6.02601`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.6.0`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 

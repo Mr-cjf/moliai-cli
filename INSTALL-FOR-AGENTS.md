@@ -115,7 +115,7 @@ sha256sum -c SHA256SUMS.txt
 > **⚠️ 暂未发布，请勿执行。** `@moliai/cli` 尚未发布到 npm，请使用 2.1 或 2.2 的 GitHub Release 方式安装。以下命令仅供发布后参考。
 
 ```bash
-npm install -g @moliai/cli@0.6.02994
+npm install -g @moliai/cli@0.6.0
 ```
 
 包名是 `@moliai/cli`，安装后的命令名是 `moliai`；这条路线需要 Node.js **≥ 20**。
@@ -126,7 +126,7 @@ npm install -g @moliai/cli@0.6.02994
 ## 3. 验证安装
 
 ```bash
-moliai --version    # 应输出 0.6.03258
+moliai --version    # 应输出 0.6.0
 moliai help         # 应列出命令树
 moliai doctor       # 本机自检，恒以退出码 0 结束，看 data.healthy
 ```

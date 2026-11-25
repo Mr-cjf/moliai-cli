@@ -194,6 +194,8 @@ moliai update config --show                # 显示当前生效仓库与来源�
 `api.github.com` 未认证限流为 60 次/小时，够用；配了 `GITHUB_TOKEN` 会自动带上以提高额度
 （私有仓库还需要该 token，且 release 资产必须可被下载）。
 
+> ⚠️ `GITHUB_TOKEN` 必须对执行命令的进程可见：用 `[Environment]::SetEnvironmentVariable(..., "User")` 或系统设置面板配置后，**需要重开终端 / 重启 IDE 或 Agent 宿主进程**才会生效，已在运行的进程不会自动继承。判断是否生效：`moliai update --check` 返回 `MOLIAI_RATE_LIMITED` 且 `rateLimitRemaining: 0`，说明本次调用没带上 token。
+
 **npm / 源码安装**不走自更新（替换 `node` 可执行文件会破坏运行时），会明确拒绝并提示：
 
 > **⚠️ npm 包暂未发布，以下升级命令当前不可用，请勿执行。** 二进制安装请使用 `moliai update`。

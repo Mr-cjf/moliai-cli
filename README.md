@@ -20,7 +20,7 @@
    - macOS / Linux：
      curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 | iex
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install-boot.ps1 | iex
 3. 验证安装：moliai --version（应为 0.5.0）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
@@ -35,12 +35,14 @@
 
 **复制完等它跑完就行。** 后续所有命令见下方[命令清单](#命令清单)。
 
+> Windows 用 `install-boot.ps1`：它是个引导脚本，下载并执行真正的安装器。直接 `irm .../install.ps1 | iex` 在 PowerShell 下会因 UTF-8 BOM 解析失败。
+
 ### 不知道该选哪种方式？
 
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -64,7 +66,7 @@ curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -172,7 +174,7 @@ moliai setup --upgrade
 - 更新期间不要重复执行命令
 
 **平台支持**（与发布产物一致）：`win32-x64` / `darwin-x64` / `darwin-arm64` / `linux-x64`。
-其它平台（如 `linux-arm64`）会明确报 `MOLIAI_UNSUPPORTED`，请用 `install.sh` / `install.ps1` 重装，或从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载对应平台的二进制后自行放到 `PATH` 里（**npm 包暂未发布，当前不可用**）。
+其它平台（如 `linux-arm64`）会明确报 `MOLIAI_UNSUPPORTED`，请用 `install.sh` / `install-boot.ps1` 重装，或从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载对应平台的二进制后自行放到 `PATH` 里（**npm 包暂未发布，当前不可用**）。
 
 **仓库来源**（优先级从高到低）：
 

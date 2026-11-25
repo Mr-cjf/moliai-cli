@@ -51,8 +51,10 @@ curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install
 **Windows（PowerShell）**
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install-boot.ps1 | iex
 ```
+
+注意：不要用 `irm .../install.ps1 | iex`。该文件带 UTF-8 BOM，管道进 `Invoke-Expression` 会导致 `ParseException`（PowerShell 5.1 和 7.x 均如此）。`install-boot.ps1` 是无 BOM 的纯 ASCII 引导脚本，负责下载并按 UTF-8 解码执行真正的安装器。
 
 脚本会自动：判断平台与架构 → 下载对应 Release → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 打印 PATH 提示 → 执行 `--version` 验证。
 
@@ -68,6 +70,13 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 | 
 curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.sh -o install.sh
 # 检查内容后再执行
 sh install.sh
+```
+
+```powershell
+# Windows：下载后执行，install.ps1 在这条路径下是正常的
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.5.0/install.ps1 -OutFile install.ps1
+# 检查内容后再执行
+.\install.ps1
 ```
 
 ### 2.2 备选：手动下载

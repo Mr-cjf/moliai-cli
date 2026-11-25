@@ -45,13 +45,13 @@ CLI 是闭源软件，源码不公开，以单文件可执行程序分发。
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install.sh | sh
 ```
 
 **Windows（PowerShell）**
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install-boot.ps1 | iex
 ```
 
 注意：不要用 `irm .../install.ps1 | iex`。该文件带 UTF-8 BOM，管道进 `Invoke-Expression` 会导致 `ParseException`（PowerShell 5.1 和 7.x 均如此）。`install-boot.ps1` 是无 BOM 的纯 ASCII 引导脚本，负责下载并按 UTF-8 解码执行真正的安装器。
@@ -67,14 +67,14 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install-boot.p
 如果执行环境不允许运行远程脚本，先下载审查内容再执行：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.sh -o install.sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install.sh -o install.sh
 # 检查内容后再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows：下载后执行，install.ps1 在这条路径下是正常的
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install.ps1 -OutFile install.ps1
 # 检查内容后再执行
 .\install.ps1
 ```
@@ -115,7 +115,7 @@ sha256sum -c SHA256SUMS.txt
 > **⚠️ 暂未发布，请勿执行。** `@moliai/cli` 尚未发布到 npm，请使用 2.1 或 2.2 的 GitHub Release 方式安装。以下命令仅供发布后参考。
 
 ```bash
-npm install -g @moliai/cli@0.6.0
+npm install -g @moliai/cli@0.7.0
 ```
 
 包名是 `@moliai/cli`，安装后的命令名是 `moliai`；这条路线需要 Node.js **≥ 20**。
@@ -126,7 +126,7 @@ npm install -g @moliai/cli@0.6.0
 ## 3. 验证安装
 
 ```bash
-moliai --version    # 应输出 0.6.0
+moliai --version    # 应输出 0.7.0
 moliai help         # 应列出命令树
 moliai doctor       # 本机自检，恒以退出码 0 结束，看 data.healthy
 ```
@@ -214,6 +214,9 @@ moliai project list  # 只读接口，验证鉴权链路真的通
   - `MOLIAI_NOT_BOUND` → 当前环境没有可用凭据（没登录过，或默认环境被删了）；用 `moliai env` 看现状，再让用户提供该环境的 KEY
   - `MOLIAI_NETWORK_ERROR` → 网络/DNS/地址错误，确认 `baseUrl` 是否写全（含 `/api`）
 - `project list` 返回空数组是合法结果（账号还没有项目），不代表未授权；未授权会返回 `MOLIAI_AUTH_REQUIRED`
+- `project` 组支持 `list` 与 `create`：建项目用 `moliai project create "<名称>"`（`--mode canvas` 会顺带建一张同名画布），
+  没有 `project update` / `project delete`（改名、删除仍需网页端）。创建成功**不会**自动写目录绑定，按输出 `next` 继续；
+  建项目会写入后端数据，先确认 `moliai env` / `--base-url` 指向的环境，不要在用户未同意时向生产环境创建
 
 ## 7. 报告格式
 
@@ -239,6 +242,7 @@ moliai project list  # 只读接口，验证鉴权链路真的通
 ## 9. 装好之后
 
 - 只读探索：`moliai project list` → `moliai canvas list -w <projectId>` → `moliai node list`
+  （账号还没有项目时用 `moliai project create "<名称>"` 创建；`canvas create` / `node create` 等写命令也在 CLI 里）
 - 看模型与参数：`moliai model list` / `moliai model <modelKey>`
 - 生成预演（零成本）：`moliai run <node> --dry-run --model <k> --prompt "<p>"`
 - 真实提交需要用户明确同意，并先展示 `--dry-run` 的 `estimatedCost` 与 `warnings`

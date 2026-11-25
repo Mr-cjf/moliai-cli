@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.6.0）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.7.0）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://test-api.aidancevid.com/api
@@ -42,7 +42,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -50,7 +50,7 @@
 ## 开始之前
 
 1. 打开 <https://aidancevid.com> 注册账号，并完成充值（生成任务消耗「魔力值」）
-2. 在网页上**新建一个项目**——CLI 没有 `project create`，项目只能在网页创建
+2. 准备一个项目：在网页上新建，或直接用 `moliai project create "<项目名>"`（默认 `novel-promotion` 模式）
 3. 二进制安装不需要 Node.js（一键脚本装的是单文件二进制）。只有将来通过 npm 安装（**当前暂未发布**）才需要 Node.js **≥ 20**
 
 ## 其他安装方式
@@ -60,13 +60,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -77,20 +77,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install-boot.p
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.6.0`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.7.0`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.6.0/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.0/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -344,18 +344,21 @@ moliai doctor        # ffmpeg 项应为 pass
 > ⚖️ **音频输出固定 PCM wav**：不使用 mp3 编码器（许可证红线），变速只用原生 `atempo` 滤镜；
 > 视频一律流复制（`-c:v copy`），不解码也不编码。
 
-## 五分钟跑通（只读，零成本）
+## 五分钟跑通（零成本）
+
+> **项目从哪来**：已有项目用 `moliai project list` 取 `projectId`；还没有项目时用
+> `moliai project create "<项目名>"` 创建（加 `--mode canvas` 会顺带建一张同名画布，见「命令清单 → 项目」）。
 
 ```bash
 moliai status                 # 看配置目录、版本、登录状态、后端连通性
-moliai project list           # 列出你的项目，拿到 projectId
+moliai project list           # 列出你的项目，拿到 projectId（没有项目就先 project create）
 moliai canvas list -w <projectId>   # 列出该项目下的画布
 moliai canvas use <canvasId>  # 把画布绑定到当前目录（之后命令可省略画布参数）
 moliai node list              # 看这张画布上已有的节点
 moliai model list --type video      # 看你的账号能用哪些模型
 ```
 
-这几步都不产生费用，也不修改任何数据。
+除 `project create` 外，这几步都不产生费用，也不修改任何数据。
 
 ## 命令清单
 
@@ -502,6 +505,14 @@ moliai diagnose [canvasId] [--out report.json]
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
 | `project list` | 列出你的项目（`--limit` 1..200，默认 20） | `moliai project list --limit 10` |
+| `project create` | 创建项目（`--description` / `--mode novel-promotion\|canvas`；不自动写目录绑定） | `moliai project create "我的项目" --mode canvas` |
+
+> **`project` 组提供 `list` 与 `create`**：没有 `project update` / `project delete`，项目改名与删除请到网页端。
+> `project create` 的 `--mode` 与网页端一致：省略时为后端默认的 `novel-promotion`（**不建默认画布**，`canvasIds` 为空）；
+> `--mode canvas` 会创建一张同名画布并把 id 回填到输出的 `canvasIds` / `canvasId`。
+> 创建成功**不会**自动绑定当前目录，输出里的 `next` 给出下一步命令（`canvas use <canvasId>` 或
+> `canvas create <name> -w <projectId>`）。参数限制与后端一致：名称 1..100 字符、描述 ≤500 字符，
+> 越界直接本地报 `MOLIAI_ARG_INVALID`（退出码 2）。
 
 ### 画布
 
@@ -1545,6 +1556,9 @@ moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./�
 | `model search` | 按关键词搜索模型 | `moliai model search seedance` |
 | `model <modelKey>` | 查单个模型的参数契约 | `moliai model <provider>::<modelId>` |
 
+> **`model` 组是只读的**：只有 `list` / `search` / `<modelKey>` 三种查询，没有增删改模型的命令。
+> 可用模型由账号配置决定，CLI 不提供写入口。
+
 ### 任务
 
 | 命令 | 说明 | 最小示例 |
@@ -2517,7 +2531,7 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 | 没有 `balance` | 余额请在网页查看 |
 | 没有 `node restore` | 删除后的恢复要按 `node delete` 输出的 `restoreHint` 自行调用接口 |
 | 没有 `--watermark` | 服务端无对应能力，CLI 也不提供该参数 |
-| 没有 `project create` | 项目只能在网页创建 |
+| 没有 `project update` / `project delete` | 项目改名、删除需在网页操作 |
 
 ## 支持与反馈
 

@@ -6,6 +6,15 @@
 
 （无）
 
+## [0.7.0] - 2026-11-25
+
+### 新增
+
+- `moliai project create <name>`：创建项目（`POST /api/projects`）。支持 `--description`（≤500 字符）与
+  `--mode <novel-promotion|canvas>`（省略时由后端按默认 `novel-promotion` 处理）；`canvas` 模式会顺带创建一张
+  同名画布并回填 `canvasIds` / `canvasId`。名称非空且 ≤100 字符，越界本地即报 `MOLIAI_ARG_INVALID`；
+  创建成功不自动写目录绑定，输出 `next` 给出下一步命令。此前 `project` 组只有 `list`。
+
 ## [0.6.0] - 2026-11-25
 
 ### 新增

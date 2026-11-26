@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.10.1"
+  version: "0.10.2"
 ---
 
 # MoliAi CLI Skill
@@ -11,7 +11,7 @@ metadata:
 
 - `moliai status` 确认 `authenticated` 与 `baseUrl`；`moliai whoami` 确认身份。
 - **多环境（测试/生产）时用 `moliai env` 确认当前环境**：`data.current` 是本次实际会用的环境（已含 `--base-url` / `MOLIAI_BASE_URL` 覆盖），`data.default` 是默认环境；两者可能不同。环境不对时先问用户，不要自己切。
-- 未登录先 `moliai login key`（KEY 从 stdin 读，等同账号全权限，不要写进日志或 shell 历史）。
+- 未登录先登录：`moliai login key --base-url <url>` 只从 stdin 读 KEY（等同账号全权限，不要写进日志或 shell 历史）。**交互式那条必须由用户在本机终端执行**（会提示粘贴）；只有用户主动给出 KEY 时才用管道代跑 `printf %s "<KEY>" | moliai login key --base-url <url>`。裸跑且 stdin 无数据会在 10 秒后超时报错（不会永久挂起）。
 - 所有命令输出 JSON 信封：成功 `{ ok: true, command, data, warnings, traceId }`，失败 `{ ok: false, error: { code, message, hint, details }, traceId, traceIdSource }`。失败信息在 stderr。
 - 失败信封的 `traceId` 是**服务端** traceId（`traceIdSource: "server"`）；网络错误与纯本地错误为 `null` + `"local"`。stderr 另有一行可直接复制的 `错误 traceId: ...`。
 - 汇报时带上 `traceId`（`null` 时说明是本地错误，不要编造）。

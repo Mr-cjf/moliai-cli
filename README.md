@@ -18,13 +18,15 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.1）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.2）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://test-api.aidancevid.com/api
+   我在自己的终端里运行时它会提示我粘贴 KEY 并回车；**你不要代跑这条命令**（stdin 只能由我输入，
+   你代跑会读不到 KEY，10 秒后超时报错）
    注意：目前只有测试环境可用，生产环境会返回 404。
 
 铁律：
@@ -42,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -60,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -77,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install-boot.
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.1`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.2`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -219,12 +221,18 @@ npm i -g @moliai/cli@latest
 ## 登录
 
 ```bash
+# 交互式：运行后会提示，然后粘贴 KEY 并回车
 moliai login key --base-url "https://dance.aidancevid.com/api"
-# 按提示把 KEY 粘贴进去并回车（从 stdin 读取，不会进入 shell 历史）
+
+# 管道式（推荐用于脚本 / CI / Agent）
+"<KEY>" | moliai login key --base-url "https://dance.aidancevid.com/api"
+
 moliai whoami
 ```
 
-- KEY 只从 **stdin** 读取，不接受命令行参数
+- KEY 只从 **stdin** 读取，不接受命令行参数（避免进入 shell 历史）
+- 非交互环境（CI / Agent / 重定向）**必须用管道**：stdin 无数据时 10 秒超时会报错退出（终端里等待 120 秒），不会永久挂起；超时时间可用 `MOLIAI_STDIN_TIMEOUT_SECONDS` 覆盖
+- 交互式粘贴不会进入 shell 历史；但管道里的 KEY 明文会留在 bash/zsh 历史与进程列表，共享机器上优先交互式，或先 `read -s K` 再从变量管道输入
 - KEY 默认与令牌一起保存在 `~/.moliai/credentials.json`（目录 0700、文件 0600），用于令牌自动续期
 - 令牌剩余有效期不足阈值（`MOLIAI_REFRESH_THRESHOLD_SECONDS`，默认 3600 秒）时，CLI 会用保存的 KEY 自动换新令牌，不需要手动重新登录
 - 不希望保存 KEY 时加 `--no-save-key`：只存令牌，令牌过期后需重新 `login key`
@@ -385,8 +393,8 @@ moliai model list --type video      # 看你的账号能用哪些模型
 
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
-| `login key` | 用网页「开发者配置」里的 KEY 换取令牌并保存（推荐） | `moliai login key --base-url "https://dance.aidancevid.com/api"` |
-| `login token` | 直接粘贴一个 access token（备用路径） | `moliai login token --base-url "<url>"` |
+| `login key` | 用网页「开发者配置」里的 KEY 换取令牌并保存（推荐；读前会提示粘贴，非交互环境用管道） | `"<KEY>" \| moliai login key --base-url "https://dance.aidancevid.com/api"` |
+| `login token` | 直接粘贴一个 access token（备用路径） | `"<token>" \| moliai login token --base-url "<url>"` |
 | `logout` | 删除本地凭据（所有环境） | `moliai logout` |
 | `env` | 列出已登录的环境、默认环境与本次实际环境 | `moliai env` |
 | `env use <url>` | 把某环境设为默认（不用重新登录） | `moliai env use "https://dance.aidancevid.com/api"` |

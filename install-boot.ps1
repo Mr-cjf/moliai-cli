@@ -3,7 +3,7 @@
 # and a UTF-8 BOM would break parsing on both PowerShell 5.1 and 7.x.
 #
 # Usage:
-#   irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install-boot.ps1 | iex
+#   irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install-boot.ps1 | iex
 #
 # This script does not install anything by itself. It downloads the real
 # installer (install.ps1, which carries UTF-8 Chinese messages) to a temp
@@ -11,7 +11,7 @@
 
 $ErrorActionPreference = 'Stop'
 
-$installerUrl = 'https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.1/install.ps1'
+$installerUrl = 'https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.2/install.ps1'
 $tempFile = Join-Path ([System.IO.Path]::GetTempPath()) ('moliai-install-' + [guid]::NewGuid().ToString('N') + '.ps1')
 
 $script:oldProgress = $ProgressPreference

@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.9.0/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.0/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.9.0/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.9.0）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.0/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.0）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://test-api.aidancevid.com/api
@@ -42,7 +42,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.9.0/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.9.0/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.0/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.0/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -60,13 +60,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.9.0/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.0/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.9.0/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.0/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -77,20 +77,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.9.0/install-boot.p
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.9.0`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.0`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.9.0/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.0/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.9.0/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.0/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -212,6 +212,9 @@ npm i -g @moliai/cli@latest
 
 > ⚠️ 这个 KEY **等同于你的账号全权限**：可以创建/删除画布、提交生成并扣除魔力值，而且没有过期时间。
 > 不要把它写进脚本、CI 配置或聊天记录，也不要交给来路不明的 Agent。
+>
+> CLI 默认会把 KEY 保存到 `~/.moliai/credentials.json`（权限 0600）用于令牌自动续期。
+> KEY 等同账号全权限且**无法单独吊销**，请确保该文件不被他人读取；不希望保存时用 `login key --no-save-key`。
 
 ## 登录
 
@@ -222,7 +225,9 @@ moliai whoami
 ```
 
 - KEY 只从 **stdin** 读取，不接受命令行参数
-- KEY 本身**不落盘**；登录成功后保存的是它换来的令牌
+- KEY 默认与令牌一起保存在 `~/.moliai/credentials.json`（目录 0700、文件 0600），用于令牌自动续期
+- 令牌剩余有效期不足阈值（`MOLIAI_REFRESH_THRESHOLD_SECONDS`，默认 3600 秒）时，CLI 会用保存的 KEY 自动换新令牌，不需要手动重新登录
+- 不希望保存 KEY 时加 `--no-save-key`：只存令牌，令牌过期后需重新 `login key`
 - 令牌保存在本地 `~/.moliai/credentials.json`（目录 0700、文件 0600）
 - **令牌按环境（`base-url`）分开保存**：登录测试环境不会覆盖生产环境的令牌，切换环境不需要重新登录
 - `--base-url` 填 API 网关根地址（结尾带 `/api`）。CLI 没有内置默认地址，地址以官方控制台/文档为准；写错通常表现为 401 或 404
@@ -239,7 +244,7 @@ moliai whoami
 
 ## 多环境（测试 / 生产）
 
-凭据文件是 v2 结构：每个 `baseUrl` 一份独立令牌，另有一个「默认环境」。登录新环境只写该环境的记录，不动其它环境。
+凭据文件是 v3 结构：每个 `baseUrl` 一份独立令牌，另有一个「默认环境」。登录新环境只写该环境的记录，不动其它环境。
 
 ```bash
 # 1) 分别登录两个环境（各自一份令牌，互不影响）
@@ -421,7 +426,7 @@ Windows 下替换由 `.update.bat` 在 CLI 退出后完成（`replaced: false`�
 | `host-detection` | 本机 | 识别到 claude / codex / dsh 宿主为 `pass`，未识别为 `warn` |
 | `network-sandbox` | 本机 | 无沙箱网络限制信号为 `pass`，检测到为 `warn` |
 | `gateway-reachable` | 联网 | `GET /user/profile` 2xx → `pass`（带延迟）；401/403 → `warn`（网关通但鉴权有问题）；其它状态/网络错误 → `fail`（区分超时 / DNS / TLS / 连接被拒） |
-| `token-validity` | 本机（读凭据） | 无 token → `fail`；已过期 → `fail`；剩余 < 24 小时 → `warn`；正常 → `pass`，并输出 `authChannel` 与剩余有效期。**不自动续期** |
+| `token-validity` | 本机（读凭据） | 无 token → `fail`；已过期 → `fail`（保存了有效 API KEY 时降为 `warn`，下次请求会自动续期）；剩余 < 24 小时 → `warn`；正常 → `pass`。消息里说明是否会自动续期：存了 KEY → 「剩余不足阈值自动续期」；KEY 被后端拒绝过 → 「需重新 login key」；没存 KEY → 「过期后需重新登录」。doctor 本身**不发起续期请求** |
 | `canvas-access` | 联网 | `GET /canvases/{id}`：正常 → `pass`；404 → `fail`；`readOnly=true` 或 `canvasPurpose=subject` → `warn`；未指定画布 → `warn`。**只读判断，不建探测节点** |
 | `models-available` | 联网 | `GET /user/models` 有模型 → `pass`（带数量与各模态分布）；为空 → `warn`；拉取失败 → `fail`；同时统计 `/cli/models` 中有参数契约（`schemaAvailable`）的模型数 |
 
@@ -1566,6 +1571,7 @@ moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./�
 |---|---|---|
 | `task list` | 列出任务（`--limit` / `--ids` / `--canvas` / `--client-request-id` / `--status`） | `moliai task list --canvas <canvasId> --limit 10` |
 | `task get` | 查单个任务（`--events` 附带事件流） | `moliai task get <taskId>` |
+| `task watch` | 实时观察任务：状态或进度变化时打印一行，终态退出（`--interval` / `--until`） | `moliai task watch <taskId> --output text` |
 | `task cancel` | 取消任务（`--yes` 必填；只有 `queued` / `processing` 会被真正取消） | `moliai task cancel <taskId> --yes` |
 
 #### `task cancel` 的行为（与后端实现对齐）
@@ -2335,7 +2341,7 @@ moliai group run "第一幕" --execute --notify 'cmd:sh ./on-batch-done.sh'
 | 认证（KEY / 令牌）、提示词、生成参数、上传的素材 | **只发到你配置的 baseUrl**（CLI 没有内置默认地址；未配置时直接报错） |
 | 下载产物、读取远端素材规格（分辨率/时长/文件头） | **直接访问 CDN `cdn.aidancevid.com`**，不经过你的 baseUrl |
 | 令牌 | 仅存本地 `~/.moliai/credentials.json`（目录 0700、文件 0600），按环境分别保存 |
-| KEY | 只从 stdin 读取，只用于换取令牌，不落盘 |
+| KEY | 只从 stdin 读取，默认保存到本地 `~/.moliai/credentials.json`（文件 0600）用于令牌自动续期；`--no-save-key` 时不保存 |
 
 - **没有独立遥测**：CLI 不会向任何第三方上报使用数据
 - CLI **不跟随 HTTP 重定向**：避免把带凭据的请求体被 307/308 转到别的主机
@@ -2346,7 +2352,8 @@ moliai group run "第一幕" --execute --notify 'cmd:sh ./on-batch-done.sh'
 | 变量 | 作用 |
 |---|---|
 | `MOLIAI_BASE_URL` | 后端地址，优先级低于 `--base-url`、高于凭据文件里的默认环境；切换环境不必改它，用 `moliai env use <url>` 即可 |
-| `MOLIAI_TOKEN` | 直接提供令牌（覆盖本地凭据）；**必须同时设置 `MOLIAI_BASE_URL`**，否则报错 |
+| `MOLIAI_TOKEN` | 直接提供令牌（覆盖本地凭据）；**必须同时设置 `MOLIAI_BASE_URL`**，否则报错。设置后不触发自动续期 |
+| `MOLIAI_REFRESH_THRESHOLD_SECONDS` | token 自动续期阈值（秒），默认 `3600`：剩余有效期不足该值时用保存的 API KEY 换取新 token |
 | `MOLIAI_CANVAS` | 当前画布 id，优先级高于目录绑定 |
 | `MOLIAI_CONFIG_DIR` | 配置目录，默认 `~/.moliai` |
 | `MOLIAI_CDN_DOMAIN` | 受信 CDN 域名清单（逗号分隔），默认 `cdn.aidancevid.com` |

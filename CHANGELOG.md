@@ -6,6 +6,31 @@
 
 （无）
 
+## [0.10.0] - 2026-11-26
+
+### 新增
+
+- `capabilities` 命令：查看各模型的能力矩阵（时长范围、分辨率选项、生成模式、素材上限）以及是否配置了参数契约。数据来自运行期接口，不依赖仓库静态配置。
+- `project update` / `project delete`：项目改名、改描述、删除。删除需 `--yes`（不可逆，会删画布与云端文件）。
+- `task watch`：实时观察单个任务状态，状态或进度变化时打印一行，终态退出。
+- `task cancel --where`：按选择器批量取消任务，需 `--yes`。单条取消行为不变。
+- `wait --all-active`：等待当前所有活跃任务（queued/processing）到终态。
+- `download --watermark-text` / `--watermark-image`：下载后本地叠加水印。仅支持图片与视频，其他类型明确报错。
+- `account list` / `account use` / `account remove`：同一环境下的多账号管理，凭证升级到 v4。
+- `login web`：浏览器授权登录（OAuth 2.0 授权码 + PKCE），不需要手动复制 API KEY。需前端授权页配合。
+- 全局选项 `--poll-interval`：自定义轮询间隔（0.5-60 秒）。
+- 全局选项 `--no-estimate`：跳过费用预估（会失效成本闸门与余额预校验，并与 `--max-cost` 互斥）。
+- 全局选项 `--retry`：只读请求失败重试（网络错误/5xx/429），写命令永不重试。
+
+### 修复
+
+- Windows 下 `--json` 输出的中文会因 PowerShell 按系统代码页解码而乱码，且 `ConvertFrom-Json` 直接失败。改为在 Windows 上把 JSON 输出中的非 ASCII 字符转义为 `\uXXXX`，输出纯 ASCII。
+- 此前 API KEY 只用于一次性换取 token、不落盘，token 7 天过期后必须手动重新登录。现在 `login key` 默认保存 KEY 并自动续期（剩余不足 1 小时时用 KEY 重新换取）；`--no-save-key` 可关闭。KEY 等同账号全权限且无法单独吊销，已保存到权限 0600 的凭证文件。
+
+### 变更
+
+- `--max-cost` 与 `--no-estimate` 互斥（后者会让前者失去比较基准）。
+
 ## [0.9.0] - 2026-11-26
 
 ### 新增

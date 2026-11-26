@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.1/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.8.0/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.1/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.7.1）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.8.0/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.8.0）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://test-api.aidancevid.com/api
@@ -42,7 +42,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.1/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.1/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.8.0/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.8.0/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -50,7 +50,7 @@
 ## 开始之前
 
 1. 打开 <https://aidancevid.com> 注册账号，并完成充值（生成任务消耗「魔力值」）
-2. 准备一个项目：在网页上新建，或直接用 `moliai project create "<项目名>"`（默认 `canvas` 模式，会创建一张同名画布）
+2. 准备一个项目：在网页上新建，或直接用 `moliai project create "<项目名>"`（CLI 只支持 `canvas`/无限画布模式，会创建一张同名画布；传统模式请在网页端建）
 3. 二进制安装不需要 Node.js（一键脚本装的是单文件二进制）。只有将来通过 npm 安装（**当前暂未发布**）才需要 Node.js **≥ 20**
 
 ## 其他安装方式
@@ -60,13 +60,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.1/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.8.0/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.1/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.8.0/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -77,20 +77,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.1/install-boot.p
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.7.1`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.8.0`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.1/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.8.0/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.7.1/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.8.0/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -347,7 +347,7 @@ moliai doctor        # ffmpeg 项应为 pass
 ## 五分钟跑通（零成本）
 
 > **项目从哪来**：已有项目用 `moliai project list` 取 `projectId`；还没有项目时用
-> `moliai project create "<项目名>"` 创建（默认 `canvas` 模式，会顺带建一张同名画布，见「命令清单 → 项目」）。
+> `moliai project create "<项目名>"` 创建（CLI 只支持 `canvas`/无限画布模式，会顺带建一张同名画布，见「命令清单 → 项目」）。
 
 ```bash
 moliai status                 # 看配置目录、版本、登录状态、后端连通性
@@ -505,11 +505,12 @@ moliai diagnose [canvasId] [--out report.json]
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
 | `project list` | 列出你的项目（`--limit` 1..200，默认 20） | `moliai project list --limit 10` |
-| `project create` | 创建项目（`--description` / `--mode novel-promotion\|canvas`，省略时默认 `canvas`；不自动写目录绑定） | `moliai project create "我的项目" --mode canvas` |
+| `project create` | 创建项目（`--description` / `--mode canvas`；**仅支持 `canvas`/无限画布**，省略时默认 `canvas`；不自动写目录绑定） | `moliai project create "我的项目" --mode canvas` |
 
 > **`project` 组提供 `list` 与 `create`**：没有 `project update` / `project delete`，项目改名与删除请到网页端。
-> `project create` 的 `--mode` 省略时**默认 `canvas`**（会创建一张同名画布并把 id 回填到输出的 `canvasIds` / `canvasId`）；
-> 需要后端默认的旧行为时显式传 `--mode novel-promotion`（**不建默认画布**，`canvasIds` 为空）。
+> **CLI 只支持 `canvas`（无限画布）模式**：`--mode` 省略时按 `canvas` 处理（会创建一张同名画布并把 id 回填到输出的
+> `canvasIds` / `canvasId`）。传统模式（`novel-promotion`）项目没有画布，CLI 对其没有任何写能力，
+> 因此 `--mode novel-promotion` 会**本地直接报 `MOLIAI_ARG_INVALID`（退出码 2）且不创建项目**，请到网页端创建。
 > 创建成功**不会**自动绑定当前目录，输出里的 `next` 给出下一步命令（`canvas use <canvasId>` 或
 > `canvas create <name> -w <projectId>`）。参数限制与后端一致：名称 1..100 字符、描述 ≤500 字符，
 > 越界直接本地报 `MOLIAI_ARG_INVALID`（退出码 2）。

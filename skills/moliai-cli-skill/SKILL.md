@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.7.1"
+  version: "0.8.0"
 ---
 
 # MoliAi CLI Skill
@@ -52,7 +52,7 @@ metadata:
 |---|---|
 | 当前环境 / 已登录环境 | `moliai env` |
 | 身份/连通性 | `moliai whoami`（`data.balance` 是真实余额，`quota` 只是本地占位） |
-| 项目 → 画布 | `moliai project list` → `moliai canvas list -w <projectId>`；没有项目时 `moliai project create "<名称>"`（默认 `canvas` 模式，顺带建一张同名画布；不自动写目录绑定，按输出 `next` 继续） |
+| 项目 → 画布 | `moliai project list` → `moliai canvas list -w <projectId>`；没有项目时 `moliai project create "<名称>"`（**CLI 只支持 `canvas`/无限画布模式**，顺带建一张同名画布；传统模式 `novel-promotion` 项目没有画布、CLI 无法操作，会直接报错，请到网页端创建；不自动写目录绑定，按输出 `next` 继续） |
 | 绑定画布到当前目录 | `moliai canvas use <canvasId>` |
 | 看画布与节点 | `moliai canvas show` / `moliai node list --limit 200` |
 | 画布体检（只读，零扣费） | `moliai diagnose` → 先看 `data.source`（`server` = 后端 Doctor 报告，`local` = 后端无该路由时的本地降级）；再按 `empty` / `failed` / `rerunnable` 查看问题，`--out report.json` 落盘 |

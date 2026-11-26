@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.10.0"
+  version: "0.10.1"
 ---
 
 # MoliAi CLI Skill
@@ -84,6 +84,8 @@ metadata:
 | 作业标签（并行 Agent 区分） | `moliai run <node> ... --label agent-a` → `moliai jobs --label agent-a`（也可用 `MOLIAI_AGENT_LABEL`） |
 | 完成通知 | `moliai run <node> ... --notify desktop`（或 `--notify 'cmd:<本地命令>'`；`run` / `wait` 单节点通知，批量命令整批汇总一条） |
 | 查任务/下载 | `moliai task get <taskId>` / `moliai download --task <taskId> -o ./out` |
+| 列任务与翻页 | `moliai task list --limit 50 --page 0`（输出 `total` / `hasMore`；旧后端这两项为 `null`） |
+| 按 clientRequestId 找回 | `moliai task list --client-request-id <id>`（可单独用，不需要 `--canvas`；未命中报 404 语义错误） |
 | 实时观察任务 | `moliai task watch <taskId> --output text`（状态/进度变化各打印一行，终态退出；失败退出码 6） |
 | 取消任务（不退费） | `moliai task cancel <taskId> --yes`（只有 queued/processing 会被取消） |
 

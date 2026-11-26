@@ -6,6 +6,17 @@
 
 （无）
 
+## [0.10.1] - 2026-11-26
+
+### 修复
+
+- `task list --client-request-id` 不再要求同时给 `--canvas`：后端已支持 `clientRequestId` 单参数找回（走 `(userId, clientRequestId)` 组合索引，`canvasId` 已降为可选），原来的本地硬校验是过时分支，会封死后端已有能力并给出错误指引。未命中时（后端 404，不区分「不存在」与「不属于当前账号」）给出完整原因说明与后续建议，不自动改用其它查询方式。
+- `task list` 改为传 `page` / `pageSize` 并输出 `total` / `hasMore`：此前传 `limit` 不传 `page`/`pageSize`，后端走历史分支不返回分页信息，取到 200 条时无法判断是否还有更多。不返回分页字段的旧版本后端仍按原行为工作（两项为 `null`）。
+
+### 新增
+
+- `task list --page <n>`：0 起页码（默认 0），配合 `--limit`（每页条数，后端 `pageSize`）翻页；`--output text` 末尾追加分页汇总行。
+
 ## [0.10.0] - 2026-11-26
 
 ### 新增

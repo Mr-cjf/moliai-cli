@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.8.0"
+  version: "0.9.0"
 ---
 
 # MoliAi CLI Skill
@@ -91,6 +91,8 @@ metadata:
 1. **`run` 前必须先 `--dry-run`**，读 `data.estimatedCost`。这是唯一零成本路径（只调 prepare + billing/estimate，不建任务、不预扣费）。
 2. `estimatedCost` 为 `null` 时**不代表免费**，只代表算不出来；同时看 `warnings` 里的 `ESTIMATE_UNAVAILABLE` / `ESTIMATE_UNSUPPORTED`。若拿不到成本，提交前必须告知用户。
 3. **视频成本 ≈ 单价 × 时长**，`480p` 与 `720p` 单价通常差一倍。改 `duration` 或 `resolution` 后必须重跑 `--dry-run`。
+   视频生成（`taskType=video`）必须显式给出 `resolution`：模型参数契约声明了 `default` 时 CLI 会补上并在 `warnings` 里说明；
+   契约没有默认值时 CLI 直接报错并列出可选档位（`moliai run <节点> --set resolution=720p`）——CLI 不从候选档位里替你挑一个，后端也不再猜。
 4. **用户未明确要求时不真实提交**。默认只执行 `--dry-run`，把模型、参数、成本呈现给用户，等确认后再提交。
 5. 重复提交用同一 `--client-request-id` 走后端幂等（`deduped=true`），不会重复扣费。
 6. **成本上限**：`--max-cost <n>`（或环境变量 `MOLIAI_MAX_COST`，参数优先）在**提交前**校验预估消耗；

@@ -6,6 +6,17 @@
 
 （无）
 
+## [0.9.0] - 2026-11-26
+
+### 新增
+
+- 提交生成任务前做余额预校验：可用余额不足以覆盖预估费用时明确报错并拒绝提交（退出码 5，错误码 `MOLIAI_INSUFFICIENT_BALANCE`）。预估不可用时给出警告并放行，如实说明未做校验。
+- 覆盖全部提交链路：run / run --where / group run / apply --run / derive 各场景 / extract / super-resolution。批量按累计预估比较。dry-run 不触发校验。
+
+### 修复
+
+- video 生成的 `resolution` 缺省值改为「显式 > 契约 default > 硬编码 720p > 首个可选档」；此前契约缺失时直接报错，导致所有 video 模型都必须手动传 `--set resolution`。
+
 ## [0.8.0] - 2026-11-26
 
 ### 变更

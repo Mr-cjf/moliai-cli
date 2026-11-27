@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.7/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.6）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.7/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.7）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://dance.aidancevid.com/api
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.7/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.7/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.7/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.7/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install-boot.
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.6`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.7`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.7/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.7/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -479,7 +479,7 @@ moliai model list --type video      # 看你的账号能用哪些模型
 | `update config` | 查看/持久化自更新仓库 | `moliai update config --repo <owner/repo>` |
 | `doctor` | 环境自检：本机（Node 版本、配置目录、宿主、沙箱信号）+ 连接环境（网关、token、画布、模型清单） | `moliai doctor` |
 | `diagnose` | 画布内容只读体检：优先调后端 Doctor 接口（`empty` / `failed` / `rerunnable`），后端未提供该端点时降级为本地扫描（仅 `empty` + `failed`，`data.source=local`） | `moliai diagnose --out report.json` |
-| `help` | 命令树（人类可读；加 `--json` 输出结构化命令树） | `moliai help --json` |
+| `help [command]` | 命令树；给命令名时输出该命令的帮助（等价于 `<command> --help`）；加 `--json`（仅不带命令名）输出结构化命令树 | `moliai help task` · `moliai help --json` |
 | `schema <command>` | 单条命令的结构（参数、默认值、可选值、输出字段） | `moliai schema run` |
 
 `setup` 支持 `--agent claude|codex|dsh|generic|all`、`--scope user`、`--check`、`--dry-run`、`--target-dir`，
@@ -603,6 +603,18 @@ moliai diagnose [canvasId] [--out report.json]
 > 用 `--page 2` 翻页。后端未返回 `pagination` 时 `total` / `hasMore` 输出 `null`（**不伪造**），
 > 此时若显式给 `--page > 1`，CLI 以 `MOLIAI_UNSUPPORTED` 显式失败。
 > `--output text` 末尾会追加一行汇总，例如 `显示 20 / 22 条（第 1 页；还有更多，用 --page 2 查看下一页）`。
+
+> **`--description` 的空值语义（三者不同，不要混用）**：
+>
+> | 用法 | 含义 |
+> |---|---|
+> | `project create "名字"`（不传 `--description`） | 创建时**没有描述**（请求体不带 `description`，后端存 null） |
+> | `project update <id> -d ""` | **清空**描述（提交 `description: null`） |
+> | `project update <id>`（不传 `-d`） | **保持**原描述不变（只提交显式给出的字段） |
+>
+> 补充：`-d "   "`（只有空白）等价于 `-d ""`——描述按 trim 后长度判定，全空白视为清空；`project create -d ""` 与不传等价（新建时本来就没有描述）。
+> 其它可清空字段同理：`connection update --label ""` 清空连线标签、`node update --content ""` 清空文本节点内容；
+> `group update` 的清空用**专用开关** `--clear-name`（`--name ""` 会直接报错，不要混用）。
 
 ### 画布
 
@@ -1694,7 +1706,7 @@ moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./�
 
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
-| `task list` | 列出任务（`--limit` 每页条数 / `--page` 页码 / `--ids` / `--canvas` / `--client-request-id` / `--status`） | `moliai task list --canvas <canvasId> --limit 10` |
+| `task list` | 列出任务（`--limit` 每页条数 / `--page` 页码 / `--ids` / `--canvas` / `--client-request-id` / `--status`）；信封额外带 `summary`（当前页 `byStatus` / `byType` 分布） | `moliai task list --canvas <canvasId> --limit 10` |
 | `task get` | 查单个任务（`--events` 附带事件流；`--with-result` 输出完整 `result`，默认只给 `resultSummary` 摘要：字段名、类型与字节数） | `moliai task get <taskId> --with-result` |
 | `task watch` | 实时观察任务：状态或进度变化时打印一行，终态退出（`--interval` / `--until`） | `moliai task watch <taskId> --output text` |
 | `task cancel` | 取消任务（执行需 `--yes`；`--dry-run` 仅预演，不需要 `--yes`；只有 `queued` / `processing` 会被真正取消）；`--where '<选择器>'` 批量取消 | `moliai task cancel <taskId> --yes` |
@@ -1722,8 +1734,12 @@ moliai task watch <taskId> --interval 1 --output ndjson  # 每行一个事件对
 #### `task list` 的分页与 `--client-request-id`
 
 - 分页：`--limit` 是每页条数（后端 `pageSize`，1..200，默认 50），`--page` 是页码（0 起，默认 0）。
-  响应为 `{ tasks, count, total, hasMore }`；`count` 是本页实际条数，`total` 是匹配总数，`hasMore` 表示是否还有下一页。
-  `--output text` 末尾会追加一行汇总，例如 `显示 50 / 1234 条（第 0 页；还有更多，用 --page 1 查看下一页）`。
+  响应为 `{ tasks, count, total, hasMore, summary }`；`count` 是本页实际条数，`total` 是匹配总数，`hasMore` 表示是否还有下一页。
+  `--output text` 末尾会追加汇总行，例如 `显示 50 / 1234 条（第 0 页；还有更多，用 --page 1 查看下一页）`。
+- `summary` 是**当前页**的状态 / 类型分布：`{ scope: "page", byStatus: {...}, byType: {...} }`。
+  `scope` 恒为 `"page"`，提醒这是本页 50 条的统计而**不是** `total` 的全量分布（全量分布需要后端聚合，CLI 不逐页重拉）。
+  `status` / `type` 缺省的任务计入 `unknown`。`--status` 过滤生效时 `byStatus` 只有一种取值，但 `byType` 仍有意义。
+  `--output text` 会再打印 `状态分布（本页 N 条）：completed 40 / failed 8` 与 `类型分布（本页 N 条）：...` 两行。
 - 旧版本后端不返回 `total` / `hasMore`：这两个字段输出 `null`（**不伪造**），默认 `--page 0` 行为不变；
   此时若显式给了 `--page > 0`，CLI 以 `MOLIAI_UNSUPPORTED` 显式失败（后端不认页码，不能把第 0 页当第 N 页返回）。
 - `--client-request-id` 可**单独使用**（后端走 `(userId, clientRequestId)` 组合索引找回任务），不需要 `--canvas`；

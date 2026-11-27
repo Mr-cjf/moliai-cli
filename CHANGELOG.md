@@ -6,6 +6,22 @@
 
 （无）
 
+## [0.10.7] - 2026-11-27
+
+### 新增
+
+- `task list` 输出 `summary`（`scope: "page"` + `byStatus` / `byType`），text 模式追加状态与类型分布两行。统计范围仅当前页，字段内已标注。
+- `moliai help <command>` 现等价于 `moliai <command> --help`；未知命令显式报错并列出可用命令。
+
+### 变更
+
+- 多余位置参数不再静默忽略：`jobs lisst` 这类拼写错误此前会成功执行（list 被当作多余参数丢弃），现在显式报错。变长参数命令不受影响。
+- `task list` 的 `summary` 与严格参数校验均为输出/行为增强，现有字段与用法不变。
+
+### 修复
+
+- `project create/update` 的空值语义此前无文档说明：不传 `-d` 表示创建时无描述 / 更新时保持原值，`-d ""`（或纯空白）表示清空。已在 README 补充，并列出 `connection --label ""`、`node --content ""`、`group --clear-name` 等同类用法。
+
 ## [0.10.6] - 2026-11-27
 
 ### 变更

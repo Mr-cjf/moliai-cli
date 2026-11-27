@@ -6,6 +6,26 @@
 
 （无）
 
+## [0.10.8] - 2026-11-27
+
+### 修复
+
+- **`--fields` 漏写 `[]` 从「静默空数组」改为显式报错**：`task list --fields tasks.taskId`（`tasks` 是数组）此前输出
+  `{ tasks: [] }` + warning，容易被误读成「没有数据」。现在数组字段漏写 `[]`、对非数组字段用 `[]`、路径语法非法
+  三种写法错误统一报 `MOLIAI_ARG_INVALID`（退出码 2）并给出正确写法（`tasks[].taskId`）。字段在数据里不存在
+  （如只有失败任务才有的 `error`）仍只给 warning + 局部空值，行为不变。
+- **`task list --output text` 不再重复打印 `summary` 裸 JSON**：`summary` 已由「状态分布 / 类型分布」两行展示，
+  此前 text 输出还会多打一行 `summary: {"scope":"page",...}`。JSON / NDJSON 输出中的 `summary` 不变。
+- **`--fields` 字段在数组全部元素上都不存在时改为报错**：`task list --fields tasks[].noSuchField` 此前只给 warning 并输出
+  `tasks: [{}, {}]`，看起来像「有两条任务但字段没值」，实际是字段名写错。现在若字段在**全部**元素上都缺失，报
+  `MOLIAI_ARG_INVALID`，`details.availableFields` 列出元素实际键名；部分元素缺失（可选字段差异）仍只给 warning，
+  空数组（没有元素可检查）保持原行为不报错。
+- **澄清 `connection update --label ""` 的真实语义**：后端 `PATCH` 只用 `if (label != null) setLabel(label)`，
+  空串会被存成**空字符串**（不是 NULL），且后端没有置 NULL 的入口（`null` 与不传等价 = 不修改）。
+  `--help` 与 README 已按实际行为改写，不再表述为「空串表示清空」（数据层面并非 NULL）。
+- **`connection create --label` 补充空值说明**：省略 `--label` = 创建时无标签（后端存 `null`），
+  `--label ""` = 存为空字符串；`--help` 与 README 与 `update` 端口径一致。
+
 ## [0.10.7] - 2026-11-27
 
 ### 新增

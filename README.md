@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.8/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.8/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.8）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.9）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://dance.aidancevid.com/api
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.8/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.8/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.8/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.8/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.8/install-boot.
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.8`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.9`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.8/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.8/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -270,6 +270,7 @@ moliai whoami
 
 | 字段 | 含义 |
 |---|---|
+| `accountId` | 本次实际使用的**本地账号 id**（`--account` / `MOLIAI_ACCOUNT` 匹配到的账号，否则是该环境的默认账号）；用 `MOLIAI_TOKEN` 时没有本地账号，为 `null` |
 | `quota` | 本地占位（`source: "local-default"`），**不是**服务端配额 |
 | `balance` | 真实余额：`total`（合计）/ `general`（通用）/ `membership`（会员）/ `frozen`（冻结）/ `totalSpent`（累计已消耗），来自 `GET /user/balance` |
 | `balance: null` | 未登录，或余额接口查询失败；原因写在 `warnings`（不会伪造数字） |
@@ -342,6 +343,48 @@ moliai account use <id>       # 切换当前环境的默认账号
 
 `account` 的账号标识可以是 `userId`、昵称或账号 id；**昵称重复时必须用 `userId`**。
 所有 `account` 子命令只作用于当前环境，用全局 `--base-url` 可临时对其它环境操作。
+
+### 单次调用指定账号（多会话并行）
+
+同一个环境里存了多个账号时，**默认账号是全局的**：两个会话各自 `account use` 会互相覆盖。
+需要「这个会话固定用 A 账号、那个会话固定用 B 账号」时，用**会话级**指定，不改默认账号：
+
+```bash
+# 命令行（优先级最高，只影响这一次调用）
+moliai whoami --account cjf
+moliai task list --account b4f68a63-163e-4694-996e-0b7b6bc14a49
+
+# 环境变量（影响当前 shell / 当前 Agent 进程的所有调用）
+export MOLIAI_ACCOUNT=cjf
+
+# 临时只给一条命令
+MOLIAI_ACCOUNT=cjf moliai task list
+```
+
+账号解析优先级：
+
+```
+--account <userId|昵称|账号id>   （命令行，最高）
+  > MOLIAI_ACCOUNT   （环境变量）
+  > credentials.json 的 defaultAccount   （`moliai account use` 改的那个）
+  > 该环境的第一个账号
+```
+
+- **匹配不到就报错**（`MOLIAI_ARG_INVALID`，`details.available` 列出该环境可用的账号），**不会悄悄退回默认账号**——
+  `MOLIAI_ACCOUNT=typo` 停在报错上，好过静默用另一个账号扣费
+- 续期（API KEY 换 token）与作业目录归属都跟随同一个「选中的账号」，不会出现「续期 A、请求 B」
+- `whoami` 的 `accountId` / `account list` 的 `activeAccount` 会告诉你本次实际用的是哪个本地账号
+- 与 `MOLIAI_TOKEN` 同时设置会直接报错（直接给的令牌无法对应本地账号，不能让账号指定被静默忽略）
+
+### 凭据文件的并发写入
+
+`~/.moliai/credentials.json` 可能被多个 CLI 进程同时改写（多个会话 / 多个 Agent）。
+写入是**读-改-写 + 原子替换**（先写同目录临时文件再 rename）：
+
+- 只应用本次改动的那部分（新增账号、续期 token、切换默认），不会用旧快照整体覆盖别人的写入
+- 读者不会看到半截 JSON；进程中途被杀也不会留下损坏文件
+- 两个进程恰好在同一瞬间续期同一账号时，后写覆盖前者——两枚 token 都是服务端签发的有效令牌，不影响可用性
+
 
 ### 环境解析优先级
 
@@ -442,11 +485,14 @@ moliai model list --type video      # 看你的账号能用哪些模型
 --trace-id <id>               # 指定成功信封的 traceId（默认随机生成；失败信封用服务端 traceId）
 --fields <list>               # 只输出 data 里的指定字段，支持 a.b 与 a[].b
 --base-url <url>              # 本次调用使用的后端地址（优先级最高）
+--account <query>             # 本次调用使用的账号（userId / 昵称 / 账号 id；也可用 MOLIAI_ACCOUNT）
 --poll-interval <seconds>     # 轮询间隔（秒），默认 2；取值 0.5-60，支持小数
 --no-estimate                 # 跳过费用预估（--max-cost 与余额预校验不会生效）
 --retry <times>               # 失败重试次数，仅只读 GET 请求（网络错误 / 5xx / 429）；默认 0，上限 5
 -V, --version                 # 版本
 ```
+
+- `--account` 只影响本次调用，不改凭据文件里的 `defaultAccount`；匹配不到账号直接报错，不回退默认账号
 
 - `--poll-interval` 影响 `wait` / `task watch` 以及生成类命令的轮询节奏
 - `--no-estimate` 会同时使**成本闸门**与**余额预校验**失效，因此与 `--max-cost` 互斥（同时传直接报 `MOLIAI_ARG_INVALID`）
@@ -468,7 +514,7 @@ moliai model list --type video      # 看你的账号能用哪些模型
 | `env` | 列出已登录的环境、默认环境与本次实际环境 | `moliai env` |
 | `env use <url>` | 把某环境设为默认（不用重新登录） | `moliai env use "https://dance.aidancevid.com/api"` |
 | `env remove <url>` | 删除某环境的凭据 | `moliai env remove "https://dance.aidancevid.com/api"` |
-| `account list` | 列出当前环境的账号（默认账号单独标出；不显示 token / KEY） | `moliai account list` |
+| `account list` | 列出当前环境的账号（默认账号单独标出，`activeAccount` 为本次实际使用的账号；不显示 token / KEY） | `moliai account list` |
 | `account use <标识>` | 切换当前环境的默认账号（标识可为 userId / 昵称 / 账号 id；昵称重复时用 userId） | `moliai account use cjf` |
 | `account remove <标识>` | 删除账号（需 `--yes`；不能删最后一个账号） | `moliai account remove cjf --yes` |
 | `whoami` | 打印当前身份、令牌过期时间与**真实余额**（`balance`） | `moliai whoami` |
@@ -2591,6 +2637,7 @@ moliai group run "第一幕" --execute --notify 'cmd:sh ./on-batch-done.sh'
 | 变量 | 作用 |
 |---|---|
 | `MOLIAI_BASE_URL` | 后端地址，优先级低于 `--base-url`、高于凭据文件里的默认环境；不设置时使用内置默认（生产）。切换环境不必改它，用 `moliai env use <url>` 即可 |
+| `MOLIAI_ACCOUNT` | 本次进程使用的账号（`userId` / 昵称 / 账号 id），优先级低于 `--account`、高于凭据文件里的 `defaultAccount`。匹配不到账号直接报错（列出可用账号），不回退默认账号。用于多个会话并行时各用各的账号 |
 | `MOLIAI_TOKEN` | 直接提供令牌（覆盖本地凭据）；**必须同时设置 `MOLIAI_BASE_URL`**，否则报错。设置后不触发自动续期 |
 | `MOLIAI_REFRESH_THRESHOLD_SECONDS` | token 自动续期阈值（秒），默认 `3600`：剩余有效期不足该值时用保存的 API KEY 换取新 token |
 | `MOLIAI_CANVAS` | 当前画布 id，优先级高于目录绑定 |

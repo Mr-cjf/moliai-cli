@@ -6,6 +6,25 @@
 
 （无）
 
+## [0.10.5] - 2026-11-27
+
+### 新增
+
+- `canvas publish` 命令组：发布（提审）/ 列表 / 详情 / 状态 / 复制。
+  注意发布是**提审**流程：调用成功后 `reviewStatus=pending`，需管理员审核通过才会出现在公开列表，且后端无取消发布接口。
+- `canvas share` 命令组：分享链接生成 / 当前访问状态 / 验证码验证 / 只读查看 / 整项目复制。
+  分享是**项目级**的，影响该项目全部画布；验证码明文只在生成时返回一次。
+- `canvas unpublish` / `canvas share disable`：后端无对应接口，命令显式报 `MOLIAI_UNSUPPORTED` 并说明可行的替代方式。
+
+### 变更
+
+- **内置默认地址改为生产环境**。`--base-url` > `MOLIAI_BASE_URL` > 凭据默认环境 > 内置默认（生产）。未登录时 `whoami` 显示 `authenticated: false` 与生产地址，`env` 的 `currentSource` 为 `builtin-default`。
+  内部测试请显式指定测试环境，见 `README-test.md`。
+
+### 修复
+
+- `login-web.ts` 中「后端要求以 /callback 开头」的注释已过期，后端已收紧为路径精确等于 `/callback`。
+
 ## [0.10.4] - 2026-11-27
 
 ### 新增

@@ -18,16 +18,16 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.4）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.5）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
-   moliai login key --base-url https://test-api.aidancevid.com/api
+   moliai login key --base-url https://dance.aidancevid.com/api
    我在自己的终端里运行时它会提示我粘贴 KEY 并回车；**你不要代跑这条命令**（stdin 只能由我输入，
    你代跑会读不到 KEY，10 秒后超时报错）
-   注意：目前只有测试环境可用，生产环境会返回 404。
+   这条地址就是 CLI 的内置默认（生产环境）；如果我说的服务地址不是它，以我给的为准。
 
 铁律：
 - 不要自动执行 moliai run 或其他会产生费用的命令
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install-boot.
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.4`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.5`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -264,7 +264,7 @@ moliai whoami
 - 不希望保存 KEY 时加 `--no-save-key`：只存令牌，令牌过期后需重新 `login key`
 - 令牌保存在本地 `~/.moliai/credentials.json`（目录 0700、文件 0600）
 - **令牌按环境（`base-url`）分开保存**：登录测试环境不会覆盖生产环境的令牌，切换环境不需要重新登录
-- `--base-url` 填 API 网关根地址（结尾带 `/api`）。CLI 没有内置默认地址，地址以官方控制台/文档为准；写错通常表现为 401 或 404
+- `--base-url` 填 API 网关根地址（结尾带 `/api`）。**不传时默认使用生产环境** `https://dance.aidancevid.com/api`（内置默认），要连其它环境用 `--base-url` / `MOLIAI_BASE_URL` 显式指定；地址写错通常表现为 401 或 404
 
 `moliai whoami` 的 `data` 里除了身份信息还有：
 
@@ -283,8 +283,8 @@ moliai whoami
 
 ```bash
 # 1) 分别登录两个环境（各自一份令牌，互不影响）
-moliai login key --base-url "https://test-api.aidancevid.com/api"
-moliai login key --base-url "https://dance.aidancevid.com/api"
+moliai login key --base-url "https://dance.aidancevid.com/api"   # 生产（CLI 的内置默认）
+moliai login key --base-url "<你的 API 地址>"                     # 其它环境（例如内部测试环境）
 
 # 2) 看有哪些环境、当前的默认环境与本次实际会用的环境
 moliai env
@@ -293,7 +293,7 @@ moliai env
 moliai env use "https://dance.aidancevid.com/api"
 
 # 4) 删掉某个环境的凭据（删的若是默认环境，默认自动切到剩下的一个）
-moliai env remove "https://test-api.aidancevid.com/api"
+moliai env remove "<你的 API 地址>"
 ```
 
 `moliai env` 的输出：
@@ -303,15 +303,18 @@ moliai env remove "https://test-api.aidancevid.com/api"
   "ok": true,
   "command": "env",
   "data": {
-    "default": "https://test-api.aidancevid.com/api",
-    "current": "https://test-api.aidancevid.com/api",
+    "default": "https://dance.aidancevid.com/api",
+    "currentSource": "store",
+    "current": "https://dance.aidancevid.com/api",
     "environments": [
       {
-        "baseUrl": "https://test-api.aidancevid.com/api",
+        "baseUrl": "https://dance.aidancevid.com/api",
         "userId": "b4f68a63-...",
         "nickname": "cjf",
-        "expiresAt": "2026-11-25T08:05:02.000Z",
+        "expiresAt": "2027-01-25T08:05:02.000Z",
         "expired": false,
+        "accountCount": 1,
+        "defaultAccount": "b4f68a63-...",
         "isDefault": true,
         "isCurrent": true
       }
@@ -320,9 +323,10 @@ moliai env remove "https://test-api.aidancevid.com/api"
 }
 ```
 
-- `default`：什么都不指定时用的环境
+- `default`：什么都不指定时用的环境；`null` 表示还没有登录过任何环境
 - `current`：**本次调用实际会用的环境**，已经把 `--base-url` 与 `MOLIAI_BASE_URL` 算进去，可能不等于 `default`
-- 单个命令临时换环境不必改默认：`moliai project list --base-url "https://test-api.aidancevid.com/api"`
+- `currentSource`：`current` 从哪来——`flag`（`--base-url`）/ `env`（`MOLIAI_BASE_URL`）/ `store`（凭据文件里的默认环境）/ `builtin-default`（内置默认的生产地址，此时 `environments` 为空，表示**还没登录过任何环境**）
+- 单个命令临时换环境不必改默认：`moliai project list --base-url "<你的 API 地址>"`
 
 ### 环境（`env`）与账号（`account`）
 
@@ -345,10 +349,11 @@ moliai account use <id>       # 切换当前环境的默认账号
 --base-url <url>   （命令行，最高）
   > MOLIAI_BASE_URL   （环境变量）
   > credentials.json 的 defaultEnvironment
-  > 都没有 → MOLIAI_NOT_BOUND（退出码 2）
+  > 内置默认：https://dance.aidancevid.com/api（生产）
 ```
 
 选中环境后只用该环境的令牌；该环境没登录过时报 `MOLIAI_NOT_BOUND`，hint 会直接给出该环境的登录命令。
+唯一例外是内置默认地址：没登录过只算「未登录」（`whoami` / `status` 显示 `authenticated: false`、`env` 显示 `currentSource: "builtin-default"`），不会因为「没有指定环境」而直接报错。
 
 ### 从旧版本升级
 
@@ -457,7 +462,7 @@ moliai model list --type video      # 看你的账号能用哪些模型
 | `logout` | 删除本地凭据（所有环境） | `moliai logout` |
 | `env` | 列出已登录的环境、默认环境与本次实际环境 | `moliai env` |
 | `env use <url>` | 把某环境设为默认（不用重新登录） | `moliai env use "https://dance.aidancevid.com/api"` |
-| `env remove <url>` | 删除某环境的凭据 | `moliai env remove "https://test-api.aidancevid.com/api"` |
+| `env remove <url>` | 删除某环境的凭据 | `moliai env remove "https://dance.aidancevid.com/api"` |
 | `account list` | 列出当前环境的账号（默认账号单独标出；不显示 token / KEY） | `moliai account list` |
 | `account use <标识>` | 切换当前环境的默认账号（标识可为 userId / 昵称 / 账号 id；昵称重复时用 userId） | `moliai account use cjf` |
 | `account remove <标识>` | 删除账号（需 `--yes`；不能删最后一个账号） | `moliai account remove cjf --yes` |
@@ -601,6 +606,41 @@ moliai diagnose [canvasId] [--out report.json]
 | `canvas create` | 新建画布（不自动切换当前绑定） | `moliai canvas create "第一集分镜" -w <projectId>` |
 | `canvas use` | 校验画布存在并绑定到当前目录 | `moliai canvas use <canvasId>` |
 | `canvas unuse` | 解除当前目录绑定 | `moliai canvas unuse` |
+
+### 作品发布
+
+> **`canvas publish` 是「提交审核」，不是立即上线**：新建记录 `reviewStatus=pending`，管理员通过后才写
+> `publishedAt` 并进入公开列表；审核通过前公开详情按 404 处理。**后端没有取消发布接口**（`canvas unpublish`
+> 显式报 `MOLIAI_UNSUPPORTED`），要关闭公开可见只能 `--no-public --yes` 重新提审（会再次进入审核）。
+
+| 命令 | 说明 | 最小示例 |
+|---|---|---|
+| `canvas publish` | 提交发布审核（PUT `publish-settings`）。`--name` 必填；`--video` 与 `--video-node` 二选一；`--public` / `--no-public` **必须显式二选一**（PUT 全量覆盖）；写操作需 `--yes` | `moliai canvas publish <canvasId> --name "我的短片" --video-node <nodeId> --public --yes` |
+| `canvas publish list` | 发布列表。`--type my`（默认，需登录，含 `total`）/ `--type public`（公开池，免登录，元素是精简视图且**无 `total`**） | `moliai canvas publish list --type public --size 5` |
+| `canvas publish show` | 公开发布详情（精简视图）。只有 `approved` 且上架的发布可见，未过审一律 404 | `moliai canvas publish show <publishId>` |
+| `canvas publish status` | 某张画布的发布状态：拉取「我的发布」全量分页后按 `canvasId` 匹配，取不全显式失败 | `moliai canvas publish status <canvasId>` |
+| `canvas publish copy` | 复制公开作品到自己账号（`clientRequestId` 自动生成，幂等） | `moliai canvas publish copy <publishId>` |
+| `canvas unpublish` | 取消发布（后端无该接口，显式报 `MOLIAI_UNSUPPORTED`） | `moliai canvas unpublish <canvasId>` |
+
+> `--video-node` 会把节点 `mediaUrl` 归一成公网 CDN 直链；`asset://` 与 `/m/{id}` 形态无法归一，
+> 会显式失败并提示改用 `--video <url>`。发布输出与 `warnings` 都会声明「已提交审核、当前未对外可见」。
+
+### 作品分享
+
+> 分享是**项目级**：同项目所有画布共用一份策略。`GET share-settings` 在从未生成过链接时返回 `access="private"`；
+> `PUT share-settings` **只接受 `access=code` + `--days 1|7|30`**，每次调用新增一条独立链接（旧链接与其授权不受影响），
+> 并在响应里返回本次明文验证码。**后端没有关闭分享接口**（`canvas share disable` 显式报 `MOLIAI_UNSUPPORTED`），
+> 链接只能等有效期到期自动失效。
+
+| 命令 | 说明 | 最小示例 |
+|---|---|---|
+| `canvas share show` | 查询分享设置（`verificationCode` 在 GET 上恒为 `null`） | `moliai canvas share show <canvasId>` |
+| `canvas share enable` | 生成新分享链接（`--days` 必填 1/7/30，`--code` 可选自定义 7 位验证码，需 `--yes`） | `moliai canvas share enable <canvasId> --days 7 --yes` |
+| `canvas share access` | 查询当前账号访问状态：`allowed` / `code_required` / `expired` / `private` | `moliai canvas share access <canvasId>` |
+| `canvas share verify` | 提交验证码换授权（`--code` 必填，7 位区分大小写）；返回 `allowed` / `expired` | `moliai canvas share verify <canvasId> --code aB3k9X2` |
+| `canvas share open` | 读取分享项目详情；默认只给项目名与画布清单，`--with-nodes` 才带 `nodes` / `connections` / `groups` | `moliai canvas share open <canvasId> --with-nodes` |
+| `canvas share copy` | 把分享项目**整项目**复制到自己账号（幂等） | `moliai canvas share copy <canvasId>` |
+| `canvas share disable` | 关闭分享（后端无该接口，显式报 `MOLIAI_UNSUPPORTED`） | `moliai canvas share disable <canvasId>` |
 
 ### 节点
 
@@ -2483,7 +2523,7 @@ moliai group run "第一幕" --execute --notify 'cmd:sh ./on-batch-done.sh'
 
 | 内容 | 去向 |
 |---|---|
-| 认证（KEY / 令牌）、提示词、生成参数、上传的素材 | **只发到你配置的 baseUrl**（CLI 没有内置默认地址；未配置时直接报错） |
+| 认证（KEY / 令牌）、提示词、生成参数、上传的素材 | **只发到当前 baseUrl**（不指定时就是内置默认的生产地址，可用 `--base-url` 切换到其它环境） |
 | 下载产物、读取远端素材规格（分辨率/时长/文件头） | **直接访问 CDN `cdn.aidancevid.com`**，不经过你的 baseUrl |
 | 令牌 | 仅存本地 `~/.moliai/credentials.json`（目录 0700、文件 0600），按环境分别保存 |
 | KEY | 只从 stdin 读取，默认保存到本地 `~/.moliai/credentials.json`（文件 0600）用于令牌自动续期；`--no-save-key` 时不保存 |
@@ -2496,7 +2536,7 @@ moliai group run "第一幕" --execute --notify 'cmd:sh ./on-batch-done.sh'
 
 | 变量 | 作用 |
 |---|---|
-| `MOLIAI_BASE_URL` | 后端地址，优先级低于 `--base-url`、高于凭据文件里的默认环境；切换环境不必改它，用 `moliai env use <url>` 即可 |
+| `MOLIAI_BASE_URL` | 后端地址，优先级低于 `--base-url`、高于凭据文件里的默认环境；不设置时使用内置默认（生产）。切换环境不必改它，用 `moliai env use <url>` 即可 |
 | `MOLIAI_TOKEN` | 直接提供令牌（覆盖本地凭据）；**必须同时设置 `MOLIAI_BASE_URL`**，否则报错。设置后不触发自动续期 |
 | `MOLIAI_REFRESH_THRESHOLD_SECONDS` | token 自动续期阈值（秒），默认 `3600`：剩余有效期不足该值时用保存的 API KEY 换取新 token |
 | `MOLIAI_CANVAS` | 当前画布 id，优先级高于目录绑定 |
@@ -2545,7 +2585,7 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 | 现象 | 说明与处理 |
 |---|---|
 | 401 / 认证失败 | KEY 或令牌无效、已过期。重新执行 `moliai login key` |
-| `MOLIAI_NOT_BOUND` | 当前环境没登录过，或根本没有环境。`moliai env` 看现状，再 `moliai login key --base-url <url>` |
+| `MOLIAI_NOT_BOUND` | 当前环境没登录过（通常是内置默认的生产环境）。`moliai env` 看 `currentSource`：`builtin-default` 表示还没绑定过任何环境，再 `moliai login key --base-url <url>` |
 | 404 / 找不到资源 | id 写错，或该资源不属于当前账号。先 `moliai project list` / `canvas list` 核对 |
 | 网络错误 / 超时 | 检查 `MOLIAI_BASE_URL` 是否写全（漏了 `/api`）、本机 DNS 与网络是否可达 |
 | 未绑定画布 | 传画布参数，或先 `moliai canvas use <canvasId>` |

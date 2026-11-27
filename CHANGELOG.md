@@ -6,6 +6,30 @@
 
 （无）
 
+## [0.10.6] - 2026-11-27
+
+### 变更
+
+- **新增错误码 `MOLIAI_NOT_FOUND`（退出码 2）**：HTTP 404 不再映射为 `MOLIAI_ARG_INVALID`，改为语义独立的 `MOLIAI_NOT_FOUND`，与「参数非法」区分开。退出码仍为 2，按退出码分支的脚本行为不变；按 `error.code` 精确匹配 404 的脚本需要更新。
+- **`wait --all-active` 零活跃任务改为退出码 0**：输出 `{ total: 0, done: 0, failed: 0, stillActive: 0, tasks: [] }` 并附 warning，不再报 `MOLIAI_JOB_NOT_FOUND`（正常空集不是失败）。
+- **`task cancel --where` 零匹配改为退出码 0**：输出 `matched: 0` + warning「没有匹配到任何任务」，不再报 `MOLIAI_ARG_INVALID`；`task cancel --where` 输出新增 `matched` 字段（`{ matched, cancelled, failed, cancelledCount, failedCount }`）。
+- **未知选项等 commander 报错本地化为中文**：`unknown option` / `unknown command` / 缺少必填参数或选项 / 选项缺少取值 / choices 不合法；未识别的报错格式保留英文原文（不吞信息）。
+
+### 新增
+
+- `task cancel --dry-run`（单条与 `--where` 均支持）：只回显会被取消的任务，不发起任何取消请求，不需要 `--yes`；与 `--yes` 同时给时 `--dry-run` 优先并给出 warning。
+- `task get --with-result`：输出完整 `result`（文本类 `content`、提取类 `items[]` 等）。默认仍只给 `resultSummary` 摘要（字段名 / 类型 / 字节数），避免大数组撑爆输出。
+- `login web --no-open`：只打印授权地址、不自动打开浏览器，回调服务器照常启动并等待授权完成。
+- 环境变量 `MOLIAI_JSON_NO_ESCAPE=1`：关闭 Windows 下 JSON 输出的非 ASCII 转义（默认保持转义以保证 `ConvertFrom-Json` 可用）；非法取值显式报错，不回退。
+
+### 修复
+
+- **`download --task` 与作业记录的产物字段只认 `result.mediaUrl`**：视频 / 图片 / 音频任务的产物字段分别是 `videoUrl` / `imageUrl` / `audioUrl`，导致这些任务无法下载、`jobs` 记录里 `mediaUrl` 为空、通知变量 `MOLIAI_MEDIA_URL` 为空。产物字段提取统一抽到 `core/task-result`，按 `mediaUrl` > `videoUrl` > `imageUrl` > `audioUrl` > `lipSyncVideoUrl` > `resultMediaUrl` > `url` > `storageKey` > `cosKey` 取第一个非空值，由 `download` / `jobs` / `wait` / `run` / `batch-run` 共用；全部为空时显式失败并列出 `result` 实际字段。
+- **`download` 的水印参数改为下载前校验**：互斥、图片存在性、格式、ffmpeg 可用性统一在发起下载之前校验；此前校验在下载之后，报错时磁盘已留下无水印文件，容易被误认为已加水印。水印处理失败时删除刚下载的产物。
+- **`run` / `batch-run` 画布节点未回写 `mediaUrl` 时兜底**：节点回写存在延迟，此前直接取到空值；现在用任务 `result` 的产物地址兜底，节点已回写时仍以节点值为准。
+- **`project list` 默认 `--limit 20` 静默截断且信封无分页信息**（实测真实 22 个项目只看到 20 个）：新增 `--page`（1 起）与 `count` / `total` / `hasMore`，text 模式追加分页汇总行。
+- **`jobs` 未绑定画布时 hint 缺失**：报 `MOLIAI_NOT_BOUND` 但未提示可加 `--all`，现已补上。
+
 ## [0.10.5] - 2026-11-27
 
 ### 新增

@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.10.5"
+  version: "0.10.6"
 ---
 
 # MoliAi CLI Skill
@@ -12,7 +12,9 @@ metadata:
 - `moliai status` 确认 `authenticated` 与 `baseUrl`；`moliai whoami` 确认身份。
 - **多环境（测试/生产）时用 `moliai env` 确认当前环境**：`data.current` 是本次实际会用的环境（已含 `--base-url` / `MOLIAI_BASE_URL` 覆盖），`data.default` 是默认环境；两者可能不同。环境不对时先问用户，不要自己切。
 - 未登录先登录：`moliai login key --base-url <url>` 只从 stdin 读 KEY（等同账号全权限，不要写进日志或 shell 历史）。**交互式那条必须由用户在本机终端执行**（会提示粘贴）；只有用户主动给出 KEY 时才用管道代跑 `printf %s "<KEY>" | moliai login key --base-url <url>`。裸跑且 stdin 无数据会在 10 秒后超时报错（不会永久挂起）。
+- 浏览器授权登录（`login web`）需要本机能开浏览器；服务器/无图形环境加 `--no-open`（只打印授权地址，回调服务器照常起、仍等待授权，**不是**只打印就退出）。`--web-url` 要填**前端站点**（如 `https://aidancevid.com`），填成 API 网关（`.../api`）时授权页会 404 JSON——CLI 会先给 ⚠️ 提示但不阻止。
 - 所有命令输出 JSON 信封：成功 `{ ok: true, command, data, warnings, traceId }`，失败 `{ ok: false, error: { code, message, hint, details }, traceId, traceIdSource }`。失败信息在 stderr。
+- Windows 下 JSON 里的中文会被转义成 `\uXXXX`（纯 ASCII，保证 PowerShell 5.1 的 `ConvertFrom-Json` 可用；解析后自动还原）。要用 jq / PS7 / 直接读文件时设 `MOLIAI_JSON_NO_ESCAPE=1` 关闭转义；非法取值报 `MOLIAI_ARG_INVALID`（不会静默忽略）。
 - 失败信封的 `traceId` 是**服务端** traceId（`traceIdSource: "server"`）；网络错误与纯本地错误为 `null` + `"local"`。stderr 另有一行可直接复制的 `错误 traceId: ...`。
 - 汇报时带上 `traceId`（`null` 时说明是本地错误，不要编造）。
 
@@ -52,7 +54,7 @@ metadata:
 |---|---|
 | 当前环境 / 已登录环境 | `moliai env` |
 | 身份/连通性 | `moliai whoami`（`data.balance` 是真实余额，`quota` 只是本地占位） |
-| 项目 → 画布 | `moliai project list` → `moliai canvas list -w <projectId>`；没有项目时 `moliai project create "<名称>"`（**CLI 只支持 `canvas`/无限画布模式**，顺带建一张同名画布；传统模式 `novel-promotion` 项目没有画布、CLI 无法操作，会直接报错，请到网页端创建；不自动写目录绑定，按输出 `next` 继续） |
+| 项目 → 画布 | `moliai project list` → `moliai canvas list -w <projectId>`；没有项目时 `moliai project create "<名称>"`（**CLI 只支持 `canvas`/无限画布模式**，顺带建一张同名画布；传统模式 `novel-promotion` 项目没有画布、CLI 无法操作，会直接报错，请到网页端创建；不自动写目录绑定，按输出 `next` 继续）。`project list` 分页：`--limit` 每页 1..200（默认 20）、`--page` **从 1 开始**；信封带 `count` / `total` / `hasMore`，**`hasMore=true` 就是还有下一页**，别把默认 20 条当成全部项目 |
 | 绑定画布到当前目录 | `moliai canvas use <canvasId>` |
 | 看画布与节点 | `moliai canvas show` / `moliai node list --limit 200` |
 | 画布体检（只读，零扣费） | `moliai diagnose` → 先看 `data.source`（`server` = 后端 Doctor 报告，`local` = 后端无该路由时的本地降级）；再按 `empty` / `failed` / `rerunnable` 查看问题，`--out report.json` 落盘 |
@@ -83,9 +85,10 @@ metadata:
 | 长任务接续 | `moliai wait <jobId> --max 60` / `moliai jobs --active` |
 | 作业标签（并行 Agent 区分） | `moliai run <node> ... --label agent-a` → `moliai jobs --label agent-a`（也可用 `MOLIAI_AGENT_LABEL`） |
 | 完成通知 | `moliai run <node> ... --notify desktop`（或 `--notify 'cmd:<本地命令>'`；`run` / `wait` 单节点通知，批量命令整批汇总一条） |
-| 查任务/下载 | `moliai task get <taskId>` / `moliai download --task <taskId> -o ./out` |
+| 查任务/下载 | `moliai task get <taskId>`（加 `--with-result` 看完整 result；默认只给 resultSummary 摘要）/ `moliai download --task <taskId> -o ./out`（`--task` 要求任务已完成；产物字段自动识别 `mediaUrl` / `videoUrl` / `imageUrl` / `audioUrl` / `storageKey` 等，生成视频/图片/音频的任务都能用；全都没有时报 `MOLIAI_NOT_FOUND` 并列出 result 实际字段） |
+| 按节点下载 | `moliai download <nodeId\|nodeName> [canvasId] -o ./out`（与 `--task` 二选一；加 `--watermark-text` / `--watermark-image` 需本机 ffmpeg，水印参数在下载前校验） |
 | 列任务与翻页 | `moliai task list --limit 50 --page 0`（输出 `total` / `hasMore`；旧后端这两项为 `null`） |
-| 按 clientRequestId 找回 | `moliai task list --client-request-id <id>`（可单独用，不需要 `--canvas`；未命中报 404 语义错误） |
+| 按 clientRequestId 找回 | `moliai task list --client-request-id <id>`（可单独用，不需要 `--canvas`；未命中报 `MOLIAI_NOT_FOUND`） |
 | 实时观察任务 | `moliai task watch <taskId> --output text`（状态/进度变化各打印一行，终态退出；失败退出码 6） |
 | 取消任务（不退费） | `moliai task cancel <taskId> --yes`（只有 queued/processing 会被取消） |
 
@@ -543,7 +546,7 @@ moliai apply -f plan.json --prune --yes           # 搭建 + 清理（删除，2
 - 删除后 24 小时内可恢复：按输出里的 `restoreHint` 调 `POST /canvases/{canvasId}/node-deletions/{id}/restore`（CLI 无 `node restore` 子命令）。
 - 向用户确认前，先把 `details` 里的节点名称/类型如实报出来。
 - `moliai connection delete` 同样必须 `--yes`。要能恢复就用 `--ids`（批量端点幂等 + 返回 `deletionOperationId`，24 小时内 `moliai connection restore <opId>`）；单条 `DELETE` 非幂等且普通连线不返回恢复操作 id。
-- `moliai task cancel <taskId>` **必须带 `--yes`**；它不退预扣费，确认前先把 `details.status` 与退费说明报给用户。
+- `moliai task cancel <taskId>` **执行时必须带 `--yes`**；它不退预扣费，确认前先把 `details.status` 与退费说明报给用户。想看会取消什么先加 `--dry-run`（不需要 `--yes`）。
 - `moliai group delete <groupId>` **默认只解组**（节点全部保留，无恢复入口）；`--with-members --yes` 才会连成员节点与连线一起删（24 小时内 `moliai group restore <restoreOperationId>`）。同样必须 `--yes`。
 - 分镜组（`groupType=STORYBOARD`）三个破坏性操作**必须用 `storyboard` 子命令**，语义别混：
   - `dissolve` = **组没、节点留**；`clear` = **组在、节点软删**；`to-normal` = **组降级成普通组、节点留在组里**。
@@ -554,7 +557,9 @@ moliai apply -f plan.json --prune --yes           # 搭建 + 清理（删除，2
 
 ## 任务取消（`task cancel`）
 
-1. `moliai task cancel <taskId> --yes`，端点 `DELETE /api/tasks/{taskId}`。**必须 `--yes`**（缺失退出码 10，`details` 给状态与退费说明）。
+1. `moliai task cancel <taskId> --yes`，端点 `DELETE /api/tasks/{taskId}`。**执行必须 `--yes`**（缺失退出码 10，`details` 给状态与退费说明）。
+   先预演用 `--dry-run`：回显 `{ dryRun, taskId, status, cancellable, message }`，零写请求、不需要 `--yes`。
+   批量用 `--where '<选择器>'`：同样支持 `--dry-run`；**命中 0 个是正常空集**（`matched: 0` + warning，退出码 0），不是参数错误。
 2. 后端**只有 `queued` / `processing`** 会被真正取消；其它状态后端返回 200 + `cancelled=false`（no-op），
    CLI 视为失败 `MOLIAI_CONFLICT`（退出码 9）——已完成/已失败任务不能"取消"。
 3. 取消成功后状态是 `failed` + `errorCode=TASK_CANCELLED`（**没有** `cancelled` 状态），`currentStatus` 如实回传。
@@ -567,7 +572,8 @@ moliai apply -f plan.json --prune --yes           # 搭建 + 清理（删除，2
 - `run` 拿到 taskId 的那一刻就把 `jobId`/`taskId` 写进 stderr（`[run] 已提交 taskId=... jobId=...`）和作业文件，之后被中断也能接续。
 - 未完成时 `run` 返回 `done: false` + `next: moliai wait <jobId>`（退出码 0，不是失败）。
 - 接续：`moliai wait <jobId> --max 60`，每轮至多 90 秒；`done:false` 时 `next` 指回自己，照它继续调。
-- 跨会话找回：`moliai jobs --active`（当前画布）/ `moliai jobs --all`（=`--everywhere`）/ `moliai jobs show <jobId>`。
+  一次等所有活跃任务用 `moliai wait --all-active`；**没有活跃任务时是退出码 0 + 空集**（不是失败）。
+- 跨会话找回：`moliai jobs --active`（当前画布）/ `moliai jobs --all`（=`--everywhere`）/ `moliai jobs show <jobId>`。目录没绑画布时 `moliai jobs` 会报 `MOLIAI_NOT_BOUND`，hint 会提示加 `--all`——不需要先绑画布。
 - 并行 Agent 区分作业：提交时带 `--label <文本>`（或 `MOLIAI_AGENT_LABEL`），之后 `moliai jobs --label <文本>` 只看自己的。
   ⚠️ 这是**作业标签**（只写本地作业记录），与「连线标签」（`connection create --label`）和
   「参考素材别名」（`derive video-edit --ref-label`）不是一回事，别指望它出现在画布上。
@@ -629,7 +635,7 @@ moliai apply -f plan.json --prune --yes           # 搭建 + 清理（删除，2
 
 ## 环境变量
 
-`MOLIAI_BASE_URL`（后端地址覆盖，优先级低于 `--base-url`）、`MOLIAI_TOKEN`（覆盖本地凭据，必须同时设 `MOLIAI_BASE_URL`）、`MOLIAI_CANVAS`（当前画布）、`MOLIAI_CONFIG_DIR`（配置目录）、`MOLIAI_CDN_DOMAIN`（受信 CDN 域名）、`MOLIAI_AGENT_LABEL`（作业标签默认值，优先级低于 `--label`）、`MOLIAI_MAX_COST`（成本上限，优先级低于 `--max-cost`）、`MOLIAI_JOBS_DIR`（作业记录目录）。
+`MOLIAI_BASE_URL`（后端地址覆盖，优先级低于 `--base-url`）、`MOLIAI_TOKEN`（覆盖本地凭据，必须同时设 `MOLIAI_BASE_URL`）、`MOLIAI_CANVAS`（当前画布）、`MOLIAI_CONFIG_DIR`（配置目录）、`MOLIAI_CDN_DOMAIN`（受信 CDN 域名）、`MOLIAI_AGENT_LABEL`（作业标签默认值，优先级低于 `--label`）、`MOLIAI_MAX_COST`（成本上限，优先级低于 `--max-cost`）、`MOLIAI_JOBS_DIR`（作业记录目录）、`MOLIAI_WEB_URL`（`login web` 前端站点，优先级低于 `--web-url`）、`MOLIAI_JSON_NO_ESCAPE`（`1`/`true` = 关闭 Windows 下 JSON 的 `\uXXXX` 转义；`0`/`false`/不设 = 转义；其它取值报 `MOLIAI_ARG_INVALID`）。
 
 切环境优先用 `moliai env use <url>`，不要长期依赖 `MOLIAI_BASE_URL`——环境变量会盖过默认环境，容易让人误判当前用的是哪个环境。
 

@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.5）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.6）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://dance.aidancevid.com/api
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install-boot.
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.5`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.6`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.5/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.6/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -458,7 +458,7 @@ moliai model list --type video      # 看你的账号能用哪些模型
 |---|---|---|
 | `login key` | 用网页「开发者配置」里的 KEY 换取令牌并保存（推荐；读前会提示粘贴，非交互环境用管道） | `"<KEY>" \| moliai login key --base-url "https://dance.aidancevid.com/api"` |
 | `login token` | 直接粘贴一个 access token（备用路径） | `"<token>" \| moliai login token --base-url "<url>"` |
-| `login web` | 浏览器授权登录（授权码 + PKCE）：本机起回调服务器，用网页登录态换令牌。需前端授权页实现 `/oauth/cli-authorize`；不提供该页时继续用 `login key` | `moliai login web --base-url "https://dance.aidancevid.com/api"` |
+| `login web` | 浏览器授权登录（授权码 + PKCE）：本机起回调服务器，用网页登录态换令牌。需前端授权页实现 `/oauth/cli-authorize`；不提供该页时继续用 `login key`。`--no-open` 不自动开浏览器（服务器/无图形环境） | `moliai login web --base-url "https://dance.aidancevid.com/api"` |
 | `logout` | 删除本地凭据（所有环境） | `moliai logout` |
 | `env` | 列出已登录的环境、默认环境与本次实际环境 | `moliai env` |
 | `env use <url>` | 把某环境设为默认（不用重新登录） | `moliai env use "https://dance.aidancevid.com/api"` |
@@ -585,7 +585,7 @@ moliai diagnose [canvasId] [--out report.json]
 
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
-| `project list` | 列出你的项目（`--limit` 1..200，默认 20） | `moliai project list --limit 10` |
+| `project list` | 列出你的项目：`--limit` 每页条数 1..200（默认 20），`--page` 页码 **从 1 开始**（默认 1）；信封带 `count` / `total` / `hasMore`，默认 20 条截断时也能看出还有更多 | `moliai project list --limit 10 --page 1` |
 | `project create` | 创建项目（`--description` / `--mode canvas`；**仅支持 `canvas`/无限画布**，省略时默认 `canvas`；不自动写目录绑定） | `moliai project create "我的项目" --mode canvas` |
 | `project update` | 修改项目名称 / 描述（`--name` / `-d, --description`；只提交显式指定的字段） | `moliai project update <projectId> --name "新名字"` |
 | `project delete` | 删除项目（需 `--yes`；**不可逆**：软删项目下画布 + 删云端 COS 文件 + 删项目行） | `moliai project delete <projectId> --yes` |
@@ -596,6 +596,13 @@ moliai diagnose [canvasId] [--out report.json]
 > 创建成功**不会**自动绑定当前目录，输出里的 `next` 给出下一步命令（`canvas use <canvasId>` 或
 > `canvas create <name> -w <projectId>`）。参数限制与后端一致：名称 1..100 字符、描述 ≤500 字符，
 > 越界直接本地报 `MOLIAI_ARG_INVALID`（退出码 2）。
+
+> **`project list` 的分页**：`--limit` 是每页条数（后端 `pageSize`），`--page` 页码 **从 1 开始**（后端 `PageRequest.of(page - 1, pageSize)`）。
+> 响应为 `{ projects, count, total, hasMore }`：`count` 是本页实际条数、`total` 是匹配总数、`hasMore` 由后端
+> `pagination.totalPages` 推导。默认 `--limit 20` 只返回 20 条——项目更多时 `total` 会大于 `count` 且 `hasMore=true`，
+> 用 `--page 2` 翻页。后端未返回 `pagination` 时 `total` / `hasMore` 输出 `null`（**不伪造**），
+> 此时若显式给 `--page > 1`，CLI 以 `MOLIAI_UNSUPPORTED` 显式失败。
+> `--output text` 末尾会追加一行汇总，例如 `显示 20 / 22 条（第 1 页；还有更多，用 --page 2 查看下一页）`。
 
 ### 画布
 
@@ -1688,9 +1695,9 @@ moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./�
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
 | `task list` | 列出任务（`--limit` 每页条数 / `--page` 页码 / `--ids` / `--canvas` / `--client-request-id` / `--status`） | `moliai task list --canvas <canvasId> --limit 10` |
-| `task get` | 查单个任务（`--events` 附带事件流） | `moliai task get <taskId>` |
+| `task get` | 查单个任务（`--events` 附带事件流；`--with-result` 输出完整 `result`，默认只给 `resultSummary` 摘要：字段名、类型与字节数） | `moliai task get <taskId> --with-result` |
 | `task watch` | 实时观察任务：状态或进度变化时打印一行，终态退出（`--interval` / `--until`） | `moliai task watch <taskId> --output text` |
-| `task cancel` | 取消任务（`--yes` 必填；只有 `queued` / `processing` 会被真正取消）；`--where '<选择器>'` 批量取消 | `moliai task cancel <taskId> --yes` |
+| `task cancel` | 取消任务（执行需 `--yes`；`--dry-run` 仅预演，不需要 `--yes`；只有 `queued` / `processing` 会被真正取消）；`--where '<选择器>'` 批量取消 | `moliai task cancel <taskId> --yes` |
 
 #### `task watch` 的参数与输出
 
@@ -1721,7 +1728,7 @@ moliai task watch <taskId> --interval 1 --output ndjson  # 每行一个事件对
   此时若显式给了 `--page > 0`，CLI 以 `MOLIAI_UNSUPPORTED` 显式失败（后端不认页码，不能把第 0 页当第 N 页返回）。
 - `--client-request-id` 可**单独使用**（后端走 `(userId, clientRequestId)` 组合索引找回任务），不需要 `--canvas`；
   同时给 `--canvas` 时按该画布内的幂等键（`canvas:{userId}:{canvasId}:{clientRequestId}`，含音频任务的 `:nodeId` 变体）定位，语义不同。
-  未命中时后端返回 404（不区分「不存在」与「不属于当前账号」），CLI 报 `MOLIAI_ARG_INVALID` 并列出全部可能原因，**不会自动改用别的查询方式**。
+  未命中时后端返回 404（不区分「不存在」与「不属于当前账号」），CLI 报 `MOLIAI_NOT_FOUND`（退出码 2）并列出全部可能原因，**不会自动改用别的查询方式**。
 
 #### `task cancel` 的行为（与后端实现对齐）
 
@@ -1730,21 +1737,25 @@ moliai task watch <taskId> --interval 1 --output ndjson  # 每行一个事件对
 - 取消成功后后端把任务置为 `failed` + `errorCode=TASK_CANCELLED`（**不是** `cancelled` 状态），`currentStatus` 就是后端返回的真实值。
 - **不退还预扣费**：后端 `TasksApiService#cancelTask` 不做任何退费调用。CLI 的 `refunded` 恒为 `null`（后端不返回退费信息，**不伪造**），`message` 里写明这一点。
 - 缺 `--yes` 时以 `MOLIAI_CONFIRM_REQUIRED`（退出码 10）拒绝，`details` 给任务 id、当前状态、`cancellable` 与退费说明。
-- 输出：`{ taskId, previousStatus, currentStatus, cancelled, refunded, message }`。
+- `--dry-run` 只预演：回显将取消的任务与当前状态（`cancellable` 表示该状态是否会被真正取消），不发起 DELETE、**不需要 `--yes`**；与 `--yes` 同时给时 `--dry-run` 优先，并在 `warnings` 说明 `--yes` 被忽略。
+- 输出：`{ taskId, previousStatus, currentStatus, cancelled, refunded, message }`；`--dry-run` 输出 `{ dryRun: true, taskId, status, type, cancellable, message }`。
 
 #### `task cancel --where` 批量取消
 
 ```bash
-moliai task cancel --where 'status=queued' --yes
+moliai task cancel --where 'status=queued' --dry-run      # 先看会取消哪些（零写请求，退出码 0）
+moliai task cancel --where 'status=queued' --yes          # 确认后执行
 moliai task cancel --where 'type=video&status=failed' --yes
 ```
 
 - 选择器支持 `status` / `type` / `targetType` / `canvasId` / `projectId` / `errorCode`（**不支持 `id`**，单条取消用 `<taskId>`）
 - `--where` 与 `<taskId>` **互斥**；`status` 不支持逗号分隔多值（一次只按一个状态筛）
-- **必须带 `--yes`**（不带统一 `MOLIAI_CONFIRM_REQUIRED`，退出码 10），`details.tasks` 预览前 20 条；
+- **执行必须带 `--yes`**（不带统一 `MOLIAI_CONFIRM_REQUIRED`，退出码 10），`details.tasks` 预览前 N 条；
   命中数超过 `--max-nodes`（默认 100，与后端单批上限一致）时 message 会提示改用更精确的条件或调大上限
+- `--dry-run` 列出命中的任务（`{ dryRun: true, matched, maxNodes, tasks[] }`），不发起任何取消请求、不需要 `--yes`；与 `--yes` 同时给时 `--dry-run` 优先并给出 warning
+- **零匹配不是错误**：命中 0 个时输出 `matched: 0` + warning「没有匹配到任何任务」，**退出码 0**（选择器语法错才会报 `MOLIAI_SELECTOR_INVALID`）
 - 真正取消的仍然只有 `queued` / `processing`；其余任务进 `failed[]`（`reason` 由后端给出，如 `not-active`），同样不退预扣费
-- 输出：`{ cancelled, failed, cancelledCount, failedCount }`
+- 输出：`{ matched, cancelled, failed, cancelledCount, failedCount }`；`--dry-run` 输出 `{ dryRun, matched, maxNodes, tasks }`
 
 
 ### 素材
@@ -1753,15 +1764,19 @@ moliai task cancel --where 'type=video&status=failed' --yes
 |---|---|---|
 | `upload` | 上传本地媒体到画布素材库，返回 `storageKey` 与 `mediaId` | `moliai upload ./cover.png <canvasId>` |
 | `download` | 下载节点或任务的产物到本地（同名默认不覆盖，`--force` 覆盖） | `moliai download <nodeId> -o ./out` |
+| `download --task <taskId>` | 按任务下载（与节点参数二选一）：自动识别 `mediaUrl` / `videoUrl` / `imageUrl` / `audioUrl` / `storageKey` 等产物字段，视频 / 图片 / 音频生成任务都适用 | `moliai download --task <taskId> -o ./out` |
 | `download --watermark-text <文本>` | 下载后**本地**叠加文字水印（需 ffmpeg） | `moliai download <nodeId> --watermark-text "© 我的水印"` |
 | `download --watermark-image <路径>` | 下载后**本地**叠加图片水印（需 ffmpeg） | `moliai download <nodeId> --watermark-image ./logo.png` |
+
+> `download` 的选项只有：`--task <taskId>`、`-o/--out <dir>`、`--force`，以及四个水印选项（`--watermark-text` / `--watermark-image` / `--watermark-position` / `--watermark-opacity`）。画布走位置参数或 `MOLIAI_CANVAS`/目录绑定（没有 `--canvasId`）；输出目录用 `-o/--out`（没有 `--output <dir>`）；水印字号与颜色固定（没有 `--watermark-fontsize` / `--watermark-color`）。
 
 水印细节：
 
 - `--watermark-text` 与 `--watermark-image` **二选一**，同时传直接报 `MOLIAI_ARG_INVALID`
 - 位置 `--watermark-position tl|tr|bl|br`（默认 `br` 右下角），不透明度 `--watermark-opacity 0`–`1`（默认 `0.6`）
 - **只支持图片（jpg / png / webp）与视频（mp4 / mov）**；音频等其它类型明确报 `MOLIAI_UNSUPPORTED`，不会静默跳过
-- 水印是在下载**之后**用本机 ffmpeg 处理，服务端不参与，因此需要本机 ffmpeg（见「本地依赖：ffmpeg」）
+- **水印参数在发起下载之前校验**：图片是否存在且是图片格式、本机 ffmpeg 是否可用，任一不满足立刻报错，**不发请求、不产生任何文件**
+- 水印是下载**之后**用本机 ffmpeg 处理（服务端不参与，因此需要本机 ffmpeg，见「本地依赖：ffmpeg」）；处理本身失败时会**删除刚下载的文件**再报错，不会留下一个看起来「已加水印」的产物
 - Windows 上文字水印会自动挑选系统中常见的字体文件传给 ffmpeg；都不存在时不传 `fontfile`（由 ffmpeg 自行解析，通常直接报错，不会静默产出无水印文件）
 
 ### 生成
@@ -2356,10 +2371,13 @@ moliai derive from-grid <image节点> --rows 2 --columns 2 --gap 12
 | `wait` | 按 jobId 分轮等待（`--max` 默认 60，上限 90；`--until done\|change\|any-failed`；`--notify` 终态通知）；`--all-active` 汇总等待所有活跃任务 | `moliai wait <jobId> --max 60` |
 | `wait --all-active` | 等待当前所有活跃任务（`queued` / `processing`）到终态，汇总输出 | `moliai wait --all-active --max 60` |
 
+> **未绑画布时**：`moliai jobs` 按当前画布过滤，目录没绑定画布会报 `MOLIAI_NOT_BOUND`（退出码 2），
+> hint 里会给出 `moliai jobs --all`（= `--everywhere`）——它跨全部画布列出作业，不需要任何绑定。
+
 `--all-active` 的口径：
 
 - **只算 `queued` + `processing`，`paused` 不算活跃**（`paused` 已停在前端，不会自行恢复）
-- 与 `jobId` 互斥；当前没有活跃任务时报 `MOLIAI_JOB_NOT_FOUND`（不是成功空结果）
+- 与 `jobId` 互斥；当前没有活跃任务时**输出空集并退出码 0**（`{ total: 0, done: 0, failed: 0, stillActive: 0, tasks: [] }` + warning）——等待型命令没有需要等的对象时语义上已完成，空集不是失败，CI/脚本可直接使用
 - 输出 `{ total, done, failed, stillActive, tasks[] }`（`tasks[]` 含每个任务的 `status` / `progress` / `mediaUrl` / `errorCode`）
 - 超过 `--max` 仍在跑时**正常返回**（不报错）：`stillActive > 0` 并带 `WAIT_TIMEOUT` warning，再次执行同一条命令继续等
 - 单个任务失败不会中断整批等待：计入 `failed`，其余任务继续等到终态
@@ -2544,6 +2562,8 @@ moliai group run "第一幕" --execute --notify 'cmd:sh ./on-batch-done.sh'
 | `MOLIAI_CDN_DOMAIN` | 受信 CDN 域名清单（逗号分隔），默认 `cdn.aidancevid.com` |
 | `MOLIAI_JOBS_DIR` | 作业记录目录 |
 | `MOLIAI_AGENT_LABEL` | 作业标签默认值（优先级低于 `--label`）；只写本地作业记录，见「作业标签」 |
+| `MOLIAI_WEB_URL` | `login web` 的前端站点地址（优先级低于 `--web-url`）；不设置时 CLI 打印待访问的授权地址 |
+| `MOLIAI_JSON_NO_ESCAPE` | 设为 `1` / `true` 时关闭 Windows 下 JSON 输出的 `\uXXXX` 非 ASCII 转义（直接输出中文）；`0` / `false` 或不设置 = 保持转义。**其它取值直接报 `MOLIAI_ARG_INVALID`**。关闭后在 GBK 码页终端可能乱码，见「Windows 下的 JSON 输出是纯 ASCII」 |
 
 ## Agent 集成
 
@@ -2586,7 +2606,7 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 |---|---|
 | 401 / 认证失败 | KEY 或令牌无效、已过期。重新执行 `moliai login key` |
 | `MOLIAI_NOT_BOUND` | 当前环境没登录过（通常是内置默认的生产环境）。`moliai env` 看 `currentSource`：`builtin-default` 表示还没绑定过任何环境，再 `moliai login key --base-url <url>` |
-| 404 / 找不到资源 | id 写错，或该资源不属于当前账号。先 `moliai project list` / `canvas list` 核对 |
+| 404 / 找不到资源（`MOLIAI_NOT_FOUND`） | id 写错，或该资源不属于当前账号（后端不区分两者，也不泄露资源存在性）。先 `moliai project list` / `canvas list` / `task list` 核对 |
 | 网络错误 / 超时 | 检查 `MOLIAI_BASE_URL` 是否写全（漏了 `/api`）、本机 DNS 与网络是否可达 |
 | 未绑定画布 | 传画布参数，或先 `moliai canvas use <canvasId>` |
 | 参数非法 | 报错会列出可选值。先 `moliai model <modelKey>` 或 `moliai run ... --dry-run` 看契约，不要盲试 |
@@ -2594,7 +2614,7 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 | 409 状态冲突（`MOLIAI_CONFLICT`） | 画布版本已变化、节点已属其他编组、请求标识与内容不一致等。按 `hint` 重新读取最新数据后重试；**不需要**反馈 bug |
 | 退出码 10 | 需要显式确认（如 `node delete` 没带 `--yes`） |
 
-退出码分组：`0` 成功、`2` 参数/绑定错误、`3` 认证授权、`4` 网络/限流、`5` 配额与本地环境、`6` 任务失败、`7` 任务超时、`8` 登录超时、`9` 状态冲突、`10` 需确认、`130`/`143` 被中断。
+退出码分组：`0` 成功、`2` 参数/绑定错误（含 `MOLIAI_NOT_FOUND` 资源不存在）、`3` 认证授权、`4` 网络/限流、`5` 配额与本地环境、`6` 任务失败、`7` 任务超时、`8` 登录超时、`9` 状态冲突、`10` 需确认、`130`/`143` 被中断。
 
 ### Windows 下的 JSON 输出是纯 ASCII
 
@@ -2609,6 +2629,18 @@ Windows 下 `--json` / `--output json|ndjson` 会把非 ASCII 字符转义为 `\
 
 - 只影响 **JSON 输出**；`--output text` 仍输出 UTF-8（人眼可读）
 - 其它平台保持原样输出，不做转义
+
+**想关掉转义**（用 jq、PowerShell 7，或把输出写文件后直接看）：
+
+```powershell
+$env:MOLIAI_JSON_NO_ESCAPE = "1"   # 1 / true = 关闭转义，直接输出中文
+moliai whoami --json
+Remove-Item Env:MOLIAI_JSON_NO_ESCAPE
+```
+
+- `0` / `false` / 不设置 = 保持转义（默认，兼容 PowerShell 5.1 的 `ConvertFrom-Json`）
+- 其它取值（如 `abc`）直接报 `MOLIAI_ARG_INVALID`（退出码 2），**不静默按默认处理**
+- 关闭后若终端仍是 GBK 码页（`chcp 936`），中文会乱码——这是使用者自己选的，CLI 不阻止
 
 ### 失败信封里的 traceId
 
@@ -2735,7 +2767,7 @@ Windows 下 `--json` / `--output json|ndjson` 会把非 ASCII 字符转义为 `\
 | 限制 | 说明 |
 |---|---|
 | `upload` 需要 canvasId | 上传按画布鉴权，没有通用上传通道；省略时只能靠 `MOLIAI_CANVAS` 或目录绑定 |
-| `download --task` 只取首个产物 | `--count > 1` 时服务端只返回一个产物地址，其余产物取不到 |
+| `download --task` 只取首个产物 | 任务产物的字段名可能是 `mediaUrl` / `videoUrl` / `imageUrl` / `audioUrl` / `storageKey` 等，CLI 按此优先级自动识别，都没有时报 `MOLIAI_NOT_FOUND` 并列出 `result` 的实际字段；`--count > 1` 时服务端只返回一个产物地址，其余产物取不到 |
 | 没有 `canvas delete` | 需要在网页操作 |
 | 没有独立的 `balance` 命令 | 余额用 `moliai whoami` 的 `balance` 查看（来自 `GET /user/balance`，含通用/会员/冻结） |
 | 没有 `node restore` | 删除后的恢复要按 `node delete` 输出的 `restoreHint` 自行调用接口 |

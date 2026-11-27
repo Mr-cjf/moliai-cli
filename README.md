@@ -252,7 +252,8 @@ moliai whoami
 
 ## 多环境（测试 / 生产）
 
-凭据文件是 v3 结构：每个 `baseUrl` 一份独立令牌，另有一个「默认环境」。登录新环境只写该环境的记录，不动其它环境。
+凭据文件是 v4 结构：每个 `baseUrl` 下可存多个账号（按 `userId` 索引），另有 `defaultAccount` 指向当前使用的账号。
+登录新环境只写该环境的记录，不动其它环境；同一环境再登录另一个账号会追加，不覆盖已有账号。
 
 ```bash
 # 1) 分别登录两个环境（各自一份令牌，互不影响）
@@ -297,6 +298,21 @@ moliai env remove "https://test-api.aidancevid.com/api"
 - `current`：**本次调用实际会用的环境**，已经把 `--base-url` 与 `MOLIAI_BASE_URL` 算进去，可能不等于 `default`
 - 单个命令临时换环境不必改默认：`moliai project list --base-url "https://test-api.aidancevid.com/api"`
 
+### 环境（`env`）与账号（`account`）
+
+- **env = 环境**：按 `baseUrl` 区分（测试环境 / 生产环境），各存各的凭据
+- **account = 账号**：同一个环境下的多个账号（同一个 `baseUrl` 用不同 KEY 登录）
+
+```bash
+moliai env                    # 列出环境（含默认环境与本次实际环境）
+moliai env use <url>          # 切换环境（用该环境已保存的令牌，不重新登录）
+moliai account list           # 列出当前环境的账号（默认账号单独标出；不输出 token/KEY）
+moliai account use <id>       # 切换当前环境的默认账号
+```
+
+`account` 的账号标识可以是 `userId`、昵称或账号 id；**昵称重复时必须用 `userId`**。
+所有 `account` 子命令只作用于当前环境，用全局 `--base-url` 可临时对其它环境操作。
+
 ### 环境解析优先级
 
 ```
@@ -310,7 +326,16 @@ moliai env remove "https://test-api.aidancevid.com/api"
 
 ### 从旧版本升级
 
-v1 的 `credentials.json`（顶层平铺 `baseUrl` + `token`）在第一次读取时**自动迁移**成 v2（该环境成为默认环境）并写回，无需手动操作；加 `--verbose` 可以看到迁移日志。
+v1 / v2 / v3 的 `credentials.json` 在**第一次读取时自动迁移到 v4** 并写回，无需手动操作：
+
+| 旧版本 | 旧结构 | 迁移后 |
+|---|---|---|
+| v1 | 顶层平铺 `baseUrl` + `token` | 该环境成为默认环境，令牌成为该环境下的一个账号 |
+| v2 | 按环境存令牌，无 `apiKey` | 每个环境的令牌成为该环境下的一个账号 |
+| v3 | 按环境存令牌（含 `apiKey`） | 同上，`apiKey` 原样保留 |
+
+迁移**保留原有全部字段**（令牌、`apiKey`、默认环境等），只补齐 v4 所需的账号集合与 `defaultAccount`；
+加 `--verbose` 可以看到迁移日志（不静默改写你的文件）。
 
 ### 本地依赖：ffmpeg（音频派生 + 分镜拼接 + 网格切图）
 
@@ -386,8 +411,15 @@ moliai model list --type video      # 看你的账号能用哪些模型
 --trace-id <id>               # 指定成功信封的 traceId（默认随机生成；失败信封用服务端 traceId）
 --fields <list>               # 只输出 data 里的指定字段，支持 a.b 与 a[].b
 --base-url <url>              # 本次调用使用的后端地址（优先级最高）
+--poll-interval <seconds>     # 轮询间隔（秒），默认 2；取值 0.5-60，支持小数
+--no-estimate                 # 跳过费用预估（--max-cost 与余额预校验不会生效）
+--retry <times>               # 失败重试次数，仅只读 GET 请求（网络错误 / 5xx / 429）；默认 0，上限 5
 -V, --version                 # 版本
 ```
+
+- `--poll-interval` 影响 `wait` / `task watch` 以及生成类命令的轮询节奏
+- `--no-estimate` 会同时使**成本闸门**与**余额预校验**失效，因此与 `--max-cost` 互斥（同时传直接报 `MOLIAI_ARG_INVALID`）
+- `--retry` **需要次数**（`--retry 3`，不是布尔开关）；写命令（POST / PATCH / DELETE）永不重试，只提示
 
 ### 认证
 
@@ -395,10 +427,14 @@ moliai model list --type video      # 看你的账号能用哪些模型
 |---|---|---|
 | `login key` | 用网页「开发者配置」里的 KEY 换取令牌并保存（推荐；读前会提示粘贴，非交互环境用管道） | `"<KEY>" \| moliai login key --base-url "https://dance.aidancevid.com/api"` |
 | `login token` | 直接粘贴一个 access token（备用路径） | `"<token>" \| moliai login token --base-url "<url>"` |
+| `login web` | 浏览器授权登录（授权码 + PKCE）：本机起回调服务器，用网页登录态换令牌。需前端授权页实现 `/oauth/cli-authorize`；不提供该页时继续用 `login key` | `moliai login web --base-url "https://dance.aidancevid.com/api"` |
 | `logout` | 删除本地凭据（所有环境） | `moliai logout` |
 | `env` | 列出已登录的环境、默认环境与本次实际环境 | `moliai env` |
 | `env use <url>` | 把某环境设为默认（不用重新登录） | `moliai env use "https://dance.aidancevid.com/api"` |
 | `env remove <url>` | 删除某环境的凭据 | `moliai env remove "https://test-api.aidancevid.com/api"` |
+| `account list` | 列出当前环境的账号（默认账号单独标出；不显示 token / KEY） | `moliai account list` |
+| `account use <标识>` | 切换当前环境的默认账号（标识可为 userId / 昵称 / 账号 id；昵称重复时用 userId） | `moliai account use cjf` |
+| `account remove <标识>` | 删除账号（需 `--yes`；不能删最后一个账号） | `moliai account remove cjf --yes` |
 | `whoami` | 打印当前身份、令牌过期时间与**真实余额**（`balance`） | `moliai whoami` |
 | `status` | 打印宿主、配置目录、版本、后端连通性 | `moliai status` |
 
@@ -519,8 +555,9 @@ moliai diagnose [canvasId] [--out report.json]
 |---|---|---|
 | `project list` | 列出你的项目（`--limit` 1..200，默认 20） | `moliai project list --limit 10` |
 | `project create` | 创建项目（`--description` / `--mode canvas`；**仅支持 `canvas`/无限画布**，省略时默认 `canvas`；不自动写目录绑定） | `moliai project create "我的项目" --mode canvas` |
+| `project update` | 修改项目名称 / 描述（`--name` / `-d, --description`；只提交显式指定的字段） | `moliai project update <projectId> --name "新名字"` |
+| `project delete` | 删除项目（需 `--yes`；**不可逆**：软删项目下画布 + 删云端 COS 文件 + 删项目行） | `moliai project delete <projectId> --yes` |
 
-> **`project` 组提供 `list` 与 `create`**：没有 `project update` / `project delete`，项目改名与删除请到网页端。
 > **CLI 只支持 `canvas`（无限画布）模式**：`--mode` 省略时按 `canvas` 处理（会创建一张同名画布并把 id 回填到输出的
 > `canvasIds` / `canvasId`）。传统模式（`novel-promotion`）项目没有画布，CLI 对其没有任何写能力，
 > 因此 `--mode novel-promotion` 会**本地直接报 `MOLIAI_ARG_INVALID`（退出码 2）且不创建项目**，请到网页端创建。
@@ -1569,6 +1606,7 @@ moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./�
 | `model list` | 列出账号可见模型（`--type image\|video`） | `moliai model list --type video` |
 | `model search` | 按关键词搜索模型 | `moliai model search seedance` |
 | `model <modelKey>` | 查单个模型的参数契约 | `moliai model <provider>::<modelId>` |
+| `capabilities` | 模型能力矩阵（时长/分辨率/生成模式/素材上限 + 参数契约） | `moliai capabilities --model <provider>::<modelId>` |
 
 > **`model` 组是只读的**：只有 `list` / `search` / `<modelKey>` 三种查询，没有增删改模型的命令。
 > 可用模型由账号配置决定，CLI 不提供写入口。
@@ -1585,7 +1623,27 @@ moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./�
 | `task list` | 列出任务（`--limit` 每页条数 / `--page` 页码 / `--ids` / `--canvas` / `--client-request-id` / `--status`） | `moliai task list --canvas <canvasId> --limit 10` |
 | `task get` | 查单个任务（`--events` 附带事件流） | `moliai task get <taskId>` |
 | `task watch` | 实时观察任务：状态或进度变化时打印一行，终态退出（`--interval` / `--until`） | `moliai task watch <taskId> --output text` |
-| `task cancel` | 取消任务（`--yes` 必填；只有 `queued` / `processing` 会被真正取消） | `moliai task cancel <taskId> --yes` |
+| `task cancel` | 取消任务（`--yes` 必填；只有 `queued` / `processing` 会被真正取消）；`--where '<选择器>'` 批量取消 | `moliai task cancel <taskId> --yes` |
+
+#### `task watch` 的参数与输出
+
+```bash
+moliai task watch <taskId> --output text                 # 终端里逐行看进度
+moliai task watch <taskId> --until any-change            # 首次变化就返回
+moliai task watch <taskId> --interval 1 --output ndjson  # 每行一个事件对象，便于管道消费
+```
+
+| 参数 | 取值 / 说明 |
+|---|---|
+| `--interval <秒>` | 轮询间隔，`0.5`–`60`（支持小数），默认取全局 `--poll-interval`（2 秒） |
+| `--until <模式>` | `done`（默认，等到终态再退出）/ `any-change`（首次状态或进度变化就返回；首屏那次快照不算变化） |
+| `--fields` | **不支持**，会直接报 `MOLIAI_ARG_INVALID`（流式逐行输出，不做字段裁剪） |
+
+输出：
+
+- `text`：每行 `[HH:MM:SS] status progress=N`，只在状态或进度变化时打印
+- `json` / `ndjson`：每行一个事件对象 `{ ts, timestamp, status, progress, errorCode }`（流式，不套一次性成功信封）
+- 与 `wait` 的区别：`wait` 等到终态才返回；`task watch` 一边等一边实时打印，失败 / 暂停 / 驳回以退出码 6 结束（`paused` 用 `MOLIAI_TASK_PAUSED`）
 
 #### `task list` 的分页与 `--client-request-id`
 
@@ -1607,6 +1665,20 @@ moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./�
 - 缺 `--yes` 时以 `MOLIAI_CONFIRM_REQUIRED`（退出码 10）拒绝，`details` 给任务 id、当前状态、`cancellable` 与退费说明。
 - 输出：`{ taskId, previousStatus, currentStatus, cancelled, refunded, message }`。
 
+#### `task cancel --where` 批量取消
+
+```bash
+moliai task cancel --where 'status=queued' --yes
+moliai task cancel --where 'type=video&status=failed' --yes
+```
+
+- 选择器支持 `status` / `type` / `targetType` / `canvasId` / `projectId` / `errorCode`（**不支持 `id`**，单条取消用 `<taskId>`）
+- `--where` 与 `<taskId>` **互斥**；`status` 不支持逗号分隔多值（一次只按一个状态筛）
+- **必须带 `--yes`**（不带统一 `MOLIAI_CONFIRM_REQUIRED`，退出码 10），`details.tasks` 预览前 20 条；
+  命中数超过 `--max-nodes`（默认 100，与后端单批上限一致）时 message 会提示改用更精确的条件或调大上限
+- 真正取消的仍然只有 `queued` / `processing`；其余任务进 `failed[]`（`reason` 由后端给出，如 `not-active`），同样不退预扣费
+- 输出：`{ cancelled, failed, cancelledCount, failedCount }`
+
 
 ### 素材
 
@@ -1614,6 +1686,16 @@ moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./�
 |---|---|---|
 | `upload` | 上传本地媒体到画布素材库，返回 `storageKey` 与 `mediaId` | `moliai upload ./cover.png <canvasId>` |
 | `download` | 下载节点或任务的产物到本地（同名默认不覆盖，`--force` 覆盖） | `moliai download <nodeId> -o ./out` |
+| `download --watermark-text <文本>` | 下载后**本地**叠加文字水印（需 ffmpeg） | `moliai download <nodeId> --watermark-text "© 我的水印"` |
+| `download --watermark-image <路径>` | 下载后**本地**叠加图片水印（需 ffmpeg） | `moliai download <nodeId> --watermark-image ./logo.png` |
+
+水印细节：
+
+- `--watermark-text` 与 `--watermark-image` **二选一**，同时传直接报 `MOLIAI_ARG_INVALID`
+- 位置 `--watermark-position tl|tr|bl|br`（默认 `br` 右下角），不透明度 `--watermark-opacity 0`–`1`（默认 `0.6`）
+- **只支持图片（jpg / png / webp）与视频（mp4 / mov）**；音频等其它类型明确报 `MOLIAI_UNSUPPORTED`，不会静默跳过
+- 水印是在下载**之后**用本机 ffmpeg 处理，服务端不参与，因此需要本机 ffmpeg（见「本地依赖：ffmpeg」）
+- Windows 上文字水印会自动挑选系统中常见的字体文件传给 ffmpeg；都不存在时不传 `fontfile`（由 ffmpeg 自行解析，通常直接报错，不会静默产出无水印文件）
 
 ### 生成
 
@@ -2204,7 +2286,16 @@ moliai derive from-grid <image节点> --rows 2 --columns 2 --gap 12
 | `jobs` | 列出本地作业记录（`--active` / `--all`（=`--everywhere`）/ `--label <文本>` / `-c <canvasId>`） | `moliai jobs --active --label agent-a` |
 | `jobs show` | 单条作业完整记录，并顺带核对远端真实状态 | `moliai jobs show <jobId>` |
 | `jobs prune` | 清理已结束且超期的作业文件（默认 7 天） | `moliai jobs prune --older-than 7d` |
-| `wait` | 按 jobId 分轮等待（`--max` 默认 60，上限 90；`--notify` 终态通知） | `moliai wait <jobId> --max 60` |
+| `wait` | 按 jobId 分轮等待（`--max` 默认 60，上限 90；`--until done\|change\|any-failed`；`--notify` 终态通知）；`--all-active` 汇总等待所有活跃任务 | `moliai wait <jobId> --max 60` |
+| `wait --all-active` | 等待当前所有活跃任务（`queued` / `processing`）到终态，汇总输出 | `moliai wait --all-active --max 60` |
+
+`--all-active` 的口径：
+
+- **只算 `queued` + `processing`，`paused` 不算活跃**（`paused` 已停在前端，不会自行恢复）
+- 与 `jobId` 互斥；当前没有活跃任务时报 `MOLIAI_JOB_NOT_FOUND`（不是成功空结果）
+- 输出 `{ total, done, failed, stillActive, tasks[] }`（`tasks[]` 含每个任务的 `status` / `progress` / `mediaUrl` / `errorCode`）
+- 超过 `--max` 仍在跑时**正常返回**（不报错）：`stillActive > 0` 并带 `WAIT_TIMEOUT` warning，再次执行同一条命令继续等
+- 单个任务失败不会中断整批等待：计入 `failed`，其余任务继续等到终态
 
 ## 生成与成本
 
@@ -2255,6 +2346,9 @@ moliai run "主图" --max-cost 10 ...       # 参数优先于环境变量
 | 预估 > 上限 | `MOLIAI_BUDGET_EXCEEDED`（退出码 5），`details.estimatedCost` / `details.maxCost`，**不提交** |
 | 无法预估（`estimatedCost: null`） | 同上错误码，`details.source: "estimate-unavailable"`，**不提交** |
 | 取值非法（负数/非数字） | `MOLIAI_ARG_INVALID`（退出码 2） |
+
+与 `--no-estimate` 互斥：跳过预估后没有比较基准，两者不能同时使用（同时传直接 `MOLIAI_ARG_INVALID`）。
+`--no-estimate` 会同时让成本闸门与余额预校验失效，并写进 `warnings`。
 
 优先级：`--max-cost` > `MOLIAI_MAX_COST` > 不设上限。`--max-cost 0` 是有效值（任何消耗都超限）。
 
@@ -2435,6 +2529,20 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 
 退出码分组：`0` 成功、`2` 参数/绑定错误、`3` 认证授权、`4` 网络/限流、`5` 配额与本地环境、`6` 任务失败、`7` 任务超时、`8` 登录超时、`9` 状态冲突、`10` 需确认、`130`/`143` 被中断。
 
+### Windows 下的 JSON 输出是纯 ASCII
+
+Windows 下 `--json` / `--output json|ndjson` 会把非 ASCII 字符转义为 `\uXXXX`，输出纯 ASCII：
+
+```json
+{ "ok": true, "data": { "name": "\u6d4b\u8bd5\u9879\u76ee" } }
+```
+
+原因：PowerShell 按系统代码页（如 936/GBK）解码子进程的 UTF-8 输出会乱码，管道里 `ConvertFrom-Json` 直接失败。
+转义后与读取端编码无关，`ConvertFrom-Json` 能正常解析（解析后中文自动还原）。
+
+- 只影响 **JSON 输出**；`--output text` 仍输出 UTF-8（人眼可读）
+- 其它平台保持原样输出，不做转义
+
 ### 失败信封里的 traceId
 
 错误输出固定带两个字段，**任何错误都有**（值可能是 `null`）：
@@ -2534,11 +2642,13 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 - **现象**：后端有 `director_3d` 节点类型与 `director` 工程字段，CLI 无对应命令。
 - **怎么办**：用网页端操作。
 
-### 9. 429 限流只提示、不自动退避重试
+### 9. 429 默认不自动重试（只读 GET 可用 `--retry` 显式开启）
 
-- **现象**：返回 `MOLIAI_RATE_LIMITED`，提示稍后重试，不自动重试。
-- **原因**：网关限流为提交 10 次/分钟、查询 120 次/分钟（`group run` 的 6 秒提交节流已对齐前者）。
-- **怎么办**：并发跑多个 `group run`、或跑 30+ 节点的大组时容易撞上，等一会再跑。
+- **现象**：默认返回 `MOLIAI_RATE_LIMITED`，提示稍后重试，不自动重试。
+- **原因**：网关限流为提交 10 次/分钟、查询 120 次/分钟（`group run` 的 6 秒提交节流已对齐前者）；
+  全局 `--retry` 默认 `0`，所以默认不重试。
+- **怎么办**：只读查询可以加 `--retry`（如 `moliai task list --retry 2`，指数退避 1/2/4/8/16 秒，上限 5）。
+  **写命令（提交 / 取消 / 删除）永不重试**，并发跑多个 `group run` 或跑 30+ 节点的大组时撞上限流，只能等一会再跑。
 
 ### 10. 视频续写要求模型具备 reference profile
 
@@ -2560,10 +2670,8 @@ moliai wait job_20261118T101530_a3f2c1 --max 60
 | `upload` 需要 canvasId | 上传按画布鉴权，没有通用上传通道；省略时只能靠 `MOLIAI_CANVAS` 或目录绑定 |
 | `download --task` 只取首个产物 | `--count > 1` 时服务端只返回一个产物地址，其余产物取不到 |
 | 没有 `canvas delete` | 需要在网页操作 |
-| 没有 `balance` | 余额请在网页查看 |
+| 没有独立的 `balance` 命令 | 余额用 `moliai whoami` 的 `balance` 查看（来自 `GET /user/balance`，含通用/会员/冻结） |
 | 没有 `node restore` | 删除后的恢复要按 `node delete` 输出的 `restoreHint` 自行调用接口 |
-| 没有 `--watermark` | 服务端无对应能力，CLI 也不提供该参数 |
-| 没有 `project update` / `project delete` | 项目改名、删除需在网页操作 |
 
 ## 支持与反馈
 

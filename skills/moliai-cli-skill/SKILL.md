@@ -57,7 +57,7 @@ metadata:
 | 看画布与节点 | `moliai canvas show` / `moliai node list --limit 200` |
 | 画布体检（只读，零扣费） | `moliai diagnose` → 先看 `data.source`（`server` = 后端 Doctor 报告，`local` = 后端无该路由时的本地降级）；再按 `empty` / `failed` / `rerunnable` 查看问题，`--out report.json` 落盘 |
 | 按条件筛节点 | `moliai node list --status completed --has-result` / `--group "<组名>"` / `--sort y --limit 20` |
-| 查模型契约 | `moliai model list` / `moliai model search <kw>` / `moliai model <modelKey>` |
+| 查模型契约与能力 | `moliai model list` / `moliai model search <kw>` / `moliai model <modelKey>` / `moliai capabilities [--model <modelKey>]` |
 | 建节点 | `moliai node create "<名>" -t image --x 0 --y 0`（`-t super_resolution` 必须加 `--super-resolution-type image\|video`） |
 | 连线 | `moliai connection create <源> <目标>` / `moliai connection list` |
 | 编组 | `moliai group create <节点...> --name "名"` / `moliai group list` / `moliai group merge <g1> <g2> --yes` |

@@ -45,13 +45,13 @@ CLI 是闭源软件，源码不公开，以单文件可执行程序分发。
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh | sh
 ```
 
 **Windows（PowerShell）**
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install-boot.ps1 | iex
 ```
 
 注意：不要用 `irm .../install.ps1 | iex`。该文件带 UTF-8 BOM，管道进 `Invoke-Expression` 会导致 `ParseException`（PowerShell 5.1 和 7.x 均如此）。`install-boot.ps1` 是无 BOM 的纯 ASCII 引导脚本，负责下载并按 UTF-8 解码执行真正的安装器。
@@ -67,14 +67,14 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install-boot.
 如果执行环境不允许运行远程脚本，先下载审查内容再执行：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install.sh -o install.sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh -o install.sh
 # 检查内容后再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows：下载后执行，install.ps1 在这条路径下是正常的
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.ps1 -OutFile install.ps1
 # 检查内容后再执行
 .\install.ps1
 ```
@@ -115,7 +115,7 @@ sha256sum -c SHA256SUMS.txt
 > **⚠️ 暂未发布，请勿执行。** `@moliai/cli` 尚未发布到 npm，请使用 2.1 或 2.2 的 GitHub Release 方式安装。以下命令仅供发布后参考。
 
 ```bash
-npm install -g @moliai/cli@0.10.3
+npm install -g @moliai/cli@0.10.4
 ```
 
 包名是 `@moliai/cli`，安装后的命令名是 `moliai`；这条路线需要 Node.js **≥ 20**。
@@ -126,7 +126,7 @@ npm install -g @moliai/cli@0.10.3
 ## 3. 验证安装
 
 ```bash
-moliai --version    # 应输出 0.10.3
+moliai --version    # 应输出 0.10.4
 moliai help         # 应列出命令树
 moliai doctor       # 本机自检，恒以退出码 0 结束，看 data.healthy
 ```

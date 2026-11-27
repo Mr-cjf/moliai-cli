@@ -4,15 +4,15 @@
 
 .DESCRIPTION
   用法（PowerShell）：
-    irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install.ps1 | iex
+    irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.ps1 | iex
 
   先下载再执行：
     .\install.ps1
-    .\install.ps1 -Version v0.10.3 -InstallDir D:\tools\moliai
+    .\install.ps1 -Version v0.10.4 -InstallDir D:\tools\moliai
     .\install.ps1 -WhatIf          # 只打印计划，不下载不写入
 
 .PARAMETER Version
-  版本号，默认 v0.10.3（含 v 前缀）。也可用环境变量 MOLIAI_VERSION 覆盖。
+  版本号，默认 v0.10.4（含 v 前缀）。也可用环境变量 MOLIAI_VERSION 覆盖。
 
 .PARAMETER InstallDir
   安装目录，默认 $env:USERPROFILE\bin。也可用环境变量 MOLIAI_INSTALL_DIR 覆盖。
@@ -25,7 +25,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = $(if ($env:MOLIAI_VERSION) { $env:MOLIAI_VERSION } else { 'v0.10.3' }),
+    [string]$Version = $(if ($env:MOLIAI_VERSION) { $env:MOLIAI_VERSION } else { 'v0.10.4' }),
     [string]$InstallDir = $(if ($env:MOLIAI_INSTALL_DIR) { $env:MOLIAI_INSTALL_DIR } else { Join-Path $env:USERPROFILE 'bin' }),
     [switch]$WhatIf
 )

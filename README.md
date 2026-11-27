@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.3）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.4）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://test-api.aidancevid.com/api
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install-boot.
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.3`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.4`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.3/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.4/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -207,6 +207,32 @@ npm i -g @moliai/cli@latest
 ```
 
 下载失败会给出清晰错误（网络不可达 / HTTP 状态 / 限流），不会静默跳过，也不会自动降级到其它来源。
+
+### 版本兼容性（请求头 + 426）
+
+每个请求都会带上 `X-Moliai-Cli-Version: <当前 CLI 版本>`（框架层统一附加，调用方无法覆盖，匿名与 multipart 请求同样带）。后端据此判定兼容性。
+
+当前 CLI 低于后端要求的最低版本时，后端返回 **HTTP 426**：
+
+```json
+{
+  "success": false,
+  "error": { "code": "CLI_VERSION_TOO_OLD", "message": "...", "retryable": false },
+  "minVersion": "0.10.0",
+  "recommendedVersion": "<最新版本>",
+  "upgradeHint": "moliai update"
+}
+```
+
+CLI 映射为 `MOLIAI_VERSION_TOO_OLD`（退出码 5）：
+
+- `error.message` 给出当前版本与后端最低版本
+- `error.hint` 给出建议升级版本与升级命令
+- `error.details` 带 `currentVersion` / `minVersion` / `recommendedVersion`
+
+后端若用 400 + `error.code=CLI_VERSION_TOO_OLD` 返回，同样映射为该错误码。老后端不返回版本字段时降级为通用文案（不崩、不猜版本号）。
+
+`moliai doctor` 的 `cli-version-compatible` 检查直接比对公开端点 `GET /cli/version`（无需登录）返回的 `minVersion`。
 
 ## 获取 KEY
 
@@ -473,6 +499,7 @@ Windows 下替换由 `.update.bat` 在 CLI 退出后完成（`replaced: false`�
 | `token-validity` | 本机（读凭据） | 无 token → `fail`；已过期 → `fail`（保存了有效 API KEY 时降为 `warn`，下次请求会自动续期）；剩余 < 24 小时 → `warn`；正常 → `pass`。消息里说明是否会自动续期：存了 KEY → 「剩余不足阈值自动续期」；KEY 被后端拒绝过 → 「需重新 login key」；没存 KEY → 「过期后需重新登录」。doctor 本身**不发起续期请求** |
 | `canvas-access` | 联网 | `GET /canvases/{id}`：正常 → `pass`；404 → `fail`；`readOnly=true` 或 `canvasPurpose=subject` → `warn`；未指定画布 → `warn`。**只读判断，不建探测节点** |
 | `models-available` | 联网 | `GET /user/models` 有模型 → `pass`（带数量与各模态分布）；为空 → `warn`；拉取失败 → `fail`；同时统计 `/cli/models` 中有参数契约（`schemaAvailable`）的模型数 |
+| `cli-version-compatible` | 联网 | `GET /cli/version`（公开端点，匿名请求）比对本地 CLI 版本与后端 `minVersion`：满足 → `pass`；低于最低版本 → `fail`（消息给 `recommendedVersion` 与 `moliai update`）；404 / 401 / 网络失败 / 响应缺字段 → `warn`（「无法检查」，不阻断其它检查项） |
 
 - `--offline`：只跑前 4 项本机检查，跳过所有联网检查（离线环境下也能自检）。
 - 无法判断时（例如 token 不是标准 JWT、没有 `exp`）显式输出 `warn` 并说明原因，不会静默当 `pass`。

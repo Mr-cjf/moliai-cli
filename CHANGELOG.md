@@ -6,6 +6,14 @@
 
 （无）
 
+## [0.10.4] - 2026-11-27
+
+### 新增
+
+- 请求版本协商：每个请求统一带上 `X-Moliai-Cli-Version`（框架层附加，调用方不可覆盖），后端据此判定 CLI 兼容性。
+- 收到 HTTP 426（或 400 + `error.code=CLI_VERSION_TOO_OLD`）时映射为 `MOLIAI_VERSION_TOO_OLD`（退出码 5）：`message` 给出本机版本与后端最低版本，`hint` 给出建议版本与升级命令，`details` 带 `currentVersion` / `minVersion` / `recommendedVersion`。老后端不返回这些字段时降级为通用文案，不会崩。
+- `doctor` 新增 `cli-version-compatible` 检查：匿名调用公开端点 `GET /cli/version` 比对本地版本与 `minVersion`（按数字段比较，`0.10.0` > `0.9.0`）；端点未部署（404/401）或网络失败只报 `warn`，不阻断其它检查项。
+
 ## [0.10.3] - 2026-11-26
 
 ### 修复

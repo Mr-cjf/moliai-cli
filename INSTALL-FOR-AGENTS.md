@@ -197,7 +197,9 @@ printf %s "<KEY>" | moliai login key --base-url "<用户提供的 baseUrl>"
 - 环境不对时**不要自己改默认环境**——先向用户确认目标环境，再由用户决定是否执行 `moliai env use <url>`
 - 只想临时换环境，用全局参数而不是改默认：`moliai project list --base-url "<url>"`
 - 报 `MOLIAI_NOT_BOUND` 且 `hint` 指向 `moliai login key --base-url <url>` → 该环境没登录过，让用户提供该环境的 KEY，不要复用另一个环境的凭证
-- 不要执行 `moliai logout`（会删掉**所有环境、所有账号**的凭据，`--account` / `MOLIAI_ACCOUNT` 也拦不住）；只清理单个环境用 `moliai env remove <url>`、单个账号用 `moliai account remove <标识> --yes`，且必须经用户同意
+- 不要执行 `moliai logout`（会删掉**所有环境、所有账号**的凭据，`--account` / `MOLIAI_ACCOUNT` 也拦不住）。
+  只清理单个环境用 `moliai env remove <url>`——该环境有多个账号时必须加 `--yes`（否则返回退出码 10 / `MOLIAI_CONFIRM_REQUIRED`，提示会说明要删除几个账号），单账号环境不需要加；
+  只清理单个账号用 `moliai account remove <标识> --yes`。以上操作都必须经用户同意
 
 ## 6. 联通验证
 

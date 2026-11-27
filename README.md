@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.10/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.9）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.10/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.10）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://dance.aidancevid.com/api
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.10/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.10/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.10/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.10/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install-boot.
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.9`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.10`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.10/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.9/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.10/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -266,6 +266,13 @@ moliai whoami
 - **令牌按环境（`base-url`）分开保存**：登录测试环境不会覆盖生产环境的令牌，切换环境不需要重新登录
 - `--base-url` 填 API 网关根地址（结尾带 `/api`）。**不传时默认使用生产环境** `https://dance.aidancevid.com/api`（内置默认），要连其它环境用 `--base-url` / `MOLIAI_BASE_URL` 显式指定；地址写错通常表现为 401 或 404
 
+> ⚠️ **两个 `--account` 不是一回事**
+>
+> - `moliai --account <query> login key` 里的 `--account` 是**全局选项**（决定本次调用用哪个账号），
+>   对登录保存的 `accountId` **无效**——保存的 `accountId` 由新 token 里的 `userId` 决定（`userId` 不变就是更新同一账号）。
+> - 只有 `moliai login key --account <name>` 这个**命令自己的** `--account` 才影响账号命名，
+>   用于「同一个账号另外存一份」的场景。写在 `login` 前面就会变成全局选项，不生效也不报错。
+
 `moliai whoami` 的 `data` 里除了身份信息还有：
 
 | 字段 | 含义 |
@@ -275,7 +282,25 @@ moliai whoami
 | `balance` | 真实余额：`total`（合计）/ `general`（通用）/ `membership`（会员）/ `frozen`（冻结）/ `totalSpent`（累计已消耗），来自 `GET /user/balance` |
 | `balance: null` | 未登录，或余额接口查询失败；原因写在 `warnings`（不会伪造数字） |
 
-`moliai logout` 删除本地凭据（会删掉所有环境）。
+`moliai logout` 删除的是**整个** `~/.moliai/credentials.json`：**所有环境、所有账号**一起删掉，
+不受 `--account` / `MOLIAI_ACCOUNT` 影响（这两个只决定「本次调用用哪个账号」，与删除范围无关）。
+
+```bash
+moliai logout                       # 全删（输出带删除的环境数与账号数）
+moliai account remove <标识> --yes  # 只删当前环境的某个账号（需 --yes，不能删最后一个）
+moliai account use <标识>           # 只切换当前环境的默认账号
+moliai env remove <url>             # 只删某个环境的凭据（多账号环境需 --yes）
+```
+
+- 输出是 `{ removed, environments, accounts }`：`removed` 表示是否确实删掉了文件，后两个是删除范围
+- 有多个环境或账号时带 warning：「已删除全部 N 个环境、M 个账号的本地凭据」；
+  设了 `--account` / `MOLIAI_ACCOUNT` 时再加一条「logout 会删除全部账号，不只是该账号」
+- 单环境单账号不额外提示（这类用户本来就知道自己在删什么）
+- `logout` 不要求 `--yes`：它的语义就是「清空本地凭据」，多一道确认只增加摩擦；误删的代价是重新登录
+- **`logout` 只删 `credentials.json` 这一个文件**：本地作业记录（`~/.moliai/jobs/`）、提交结果未知记录（`~/.moliai/pending/`）、
+  CLI 配置（`~/.moliai/config.json`，如 `updateRepo`）与目录绑定（工作目录下的 `.moliai/config.json`）都**不受影响**，
+  仍然可以使用（作业记录里的 `--label` 也还在）
+- 需要彻底清干净（换机器、怀疑本地状态被写坏）时，手动删除整个配置目录：`~/.moliai`（或 `MOLIAI_CONFIG_DIR` 指向的目录）
 
 ## 多环境（测试 / 生产）
 
@@ -294,7 +319,8 @@ moliai env
 moliai env use "https://dance.aidancevid.com/api"
 
 # 4) 删掉某个环境的凭据（删的若是默认环境，默认自动切到剩下的一个）
-moliai env remove "<你的 API 地址>"
+moliai env remove "<你的 API 地址>"          # 该环境只有 1 个账号时直接删
+moliai env remove "<你的 API 地址>" --yes    # 该环境有多个账号时必须显式确认
 ```
 
 `moliai env` 的输出：
@@ -328,6 +354,14 @@ moliai env remove "<你的 API 地址>"
 - `current`：**本次调用实际会用的环境**，已经把 `--base-url` 与 `MOLIAI_BASE_URL` 算进去，可能不等于 `default`
 - `currentSource`：`current` 从哪来——`flag`（`--base-url`）/ `env`（`MOLIAI_BASE_URL`）/ `store`（凭据文件里的默认环境）/ `builtin-default`（内置默认的生产地址，此时 `environments` 为空，表示**还没登录过任何环境**）
 - 单个命令临时换环境不必改默认：`moliai project list --base-url "<你的 API 地址>"`
+
+`moliai env remove <url>` 的输出是 `{ removed, default, accounts }`：
+
+- `removed`：被删掉的环境地址（字符串，不是布尔值）；`default`：删除后的默认环境，`null` 表示已不剩任何环境
+- `accounts`：本次**一并删除的账号数**——删的是该环境的**全部账号**，不只是默认账号
+- 该环境只有 1 个账号时不要求确认（保持原有脚本行为不变）；**大于 1 个账号时必须 `--yes`**，
+  不带直接报 `MOLIAI_CONFIRM_REQUIRED`（退出码 10），`details` 里给出会删几个账号
+- 删除多个账号时输出额外带 warning：「该环境有 N 个账号，已一并删除（这些账号都需要重新登录才能恢复）」
 
 ### 环境（`env`）与账号（`account`）
 
@@ -510,15 +544,36 @@ moliai model list --type video      # 看你的账号能用哪些模型
 | `login key` | 用网页「开发者配置」里的 KEY 换取令牌并保存（推荐；读前会提示粘贴，非交互环境用管道） | `"<KEY>" \| moliai login key --base-url "https://dance.aidancevid.com/api"` |
 | `login token` | 直接粘贴一个 access token（备用路径） | `"<token>" \| moliai login token --base-url "<url>"` |
 | `login web` | 浏览器授权登录（授权码 + PKCE）：本机起回调服务器，用网页登录态换令牌。需前端授权页实现 `/oauth/cli-authorize`；不提供该页时继续用 `login key`。`--no-open` 不自动开浏览器（服务器/无图形环境） | `moliai login web --base-url "https://dance.aidancevid.com/api"` |
-| `logout` | 删除本地凭据（所有环境） | `moliai logout` |
+| `logout` | 删除本地凭据文件（**所有环境、所有账号**，不受 `--account` / `MOLIAI_ACCOUNT` 影响）；输出删除的环境数与账号数 | `moliai logout` |
 | `env` | 列出已登录的环境、默认环境与本次实际环境 | `moliai env` |
 | `env use <url>` | 把某环境设为默认（不用重新登录） | `moliai env use "https://dance.aidancevid.com/api"` |
-| `env remove <url>` | 删除某环境的凭据 | `moliai env remove "https://dance.aidancevid.com/api"` |
+| `env remove <url>` | 删除某环境的凭据（含该环境全部账号；输出删除的账号数，多账号环境需 `--yes`） | `moliai env remove "https://dance.aidancevid.com/api"` |
 | `account list` | 列出当前环境的账号（默认账号单独标出，`activeAccount` 为本次实际使用的账号；不显示 token / KEY） | `moliai account list` |
 | `account use <标识>` | 切换当前环境的默认账号（标识可为 userId / 昵称 / 账号 id；昵称重复时用 userId） | `moliai account use cjf` |
 | `account remove <标识>` | 删除账号（需 `--yes`；不能删最后一个账号） | `moliai account remove cjf --yes` |
 | `whoami` | 打印当前身份、令牌过期时间与**真实余额**（`balance`） | `moliai whoami` |
-| `status` | 打印宿主、配置目录、版本、后端连通性 | `moliai status` |
+| `status` | 打印宿主、配置目录、版本、后端连通性（`connectivity.error` 是含 `code` / `message` / `hint` / `details` 的对象） | `moliai status` |
+
+`status` 的 `connectivity`：
+
+- `ok: true` → 后端连通，`status` 是 HTTP 状态码，另有 `latencyMs` / `traceId`
+- `ok: false` → `error` 是**对象**（不是错误码字符串）：
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "MOLIAI_ARG_INVALID",
+    "message": "环境 https://... 下没有匹配「不存在xyz」的账号",
+    "hint": "执行 moliai account list 查看该环境的账号（第一列是账号 id / userId）",
+    "details": { "available": [{ "accountId": "acc-1", "nickname": "n1" }] }
+  }
+}
+```
+
+- `details` 里是该错误的全部诊断信息（如上面账号名写错时的可用账号列表，只含 accountId / 昵称，**不含 token / KEY**），
+  不必再跑一次 `account list` / `whoami` 才能定位
+- 未登录时 `error.code` 为 `MOLIAI_AUTH_REQUIRED`（没有可用凭据，已跳过探测）
 
 ### 安装与自检
 

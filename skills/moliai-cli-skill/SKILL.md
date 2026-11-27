@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.10.9"
+  version: "0.10.10"
 ---
 
 # MoliAi CLI Skill
@@ -24,12 +24,13 @@ metadata:
 |---|---|
 | 看有哪些环境 / 当前环境 | `moliai env` |
 | 切默认环境（不重新登录） | `moliai env use <baseUrl>` |
-| 删某环境凭据 | `moliai env remove <baseUrl>` |
+| 删某环境凭据 | `moliai env remove <baseUrl>`（含该环境全部账号；多个账号时需 `--yes`，输出 `accounts` 为删除数量） |
 | 单次调用临时换环境 | 任意命令加 `--base-url <url>` |
 
 - 每个 `baseUrl` 一份独立令牌，登录新环境不覆盖旧环境
 - `MOLIAI_NOT_BOUND` + hint 指向 `moliai login key --base-url <url>` = 该环境没登录过，让用户提供该环境的 KEY，**不要**复用别的环境的凭据
-- `moliai logout` 会删掉**所有**环境；只想清一个环境用 `moliai env remove <url>`，且需用户同意
+- `moliai logout` 会删掉**所有环境、所有账号**（`--account` / `MOLIAI_ACCOUNT` 只影响本次调用用哪个账号，拦不住它）；只想清一个环境用 `moliai env remove <url>`（该环境有多个账号时加 `--yes`）、单个账号用 `moliai account remove <标识> --yes`，且需用户同意。**`logout` 只删 `credentials.json`**：`~/.moliai/jobs/`（作业记录）、`~/.moliai/pending/`、`~/.moliai/config.json` 与目录绑定都还在；要彻底清理须由用户手动删整个配置目录
+- 全局 `--account` 对 `login` 保存的 `accountId` 无效：保存的 `accountId` 由新 token 的 `userId` 决定；只有 `login key --account <name>` 才影响账号命名
 
 ## 升级 CLI（`update`）
 

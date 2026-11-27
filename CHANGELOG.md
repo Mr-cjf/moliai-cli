@@ -6,6 +6,26 @@
 
 （无）
 
+## [0.10.10] - 2026-11-27
+
+### 变更
+
+- **破坏性**：`status` 的 `connectivity.error` 由错误码字符串改为对象（`code` / `message` / `hint` / `details`）。
+  账号名写错时不再只看到 `MOLIAI_ARG_INVALID`，`details.available` 直接列出该环境的可用账号。
+  读取该字段为字符串的脚本需改用 `connectivity.error.code`。
+- **破坏性**：`env remove` 删除的是**该环境的全部账号**，现在把账号数放进输出（`accounts`），并在账号数大于 1 时
+  要求 `--yes`。不带 `--yes` 直接报 `MOLIAI_CONFIRM_REQUIRED`（退出码 10），`details.accounts` 说明会删几个账号。
+  **单账号环境行为不变**（仍不需要 `--yes`）；多账号环境沿用旧脚本会先失败一次，补上 `--yes` 即可。
+
+### 修复
+
+- `env remove` 此前只回 `removed` / `default`，多账号环境下用户无法感知「这一删会带走几个账号」。
+  现在返回 `accounts`（删除的账号数），删除多个账号时给 warning「该环境有 N 个账号，已一并删除」。
+- `logout` 此前只回 `removed: true`，在多环境 / 多账号语境下容易被理解成「只登出当前账号」。现在输出删除的
+  `environments` / `accounts` 数量，多环境或多账号时给 warning；设了 `--account` / `MOLIAI_ACCOUNT` 时额外提示
+  「logout 会删除全部账号，不只是该账号」。文档说明 `logout` 与 `account remove` / `account use` 的区别，
+  并明确 `logout` 只删 `credentials.json`（作业记录 `jobs/`、`pending/`、CLI 配置与目录绑定都不受影响）。
+
 ## [0.10.9] - 2026-11-27
 
 ### 新增

@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.14）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.15）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://dance.aidancevid.com/api
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install-boot
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.14`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.15`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -618,6 +618,7 @@ moliai model list --type video      # 看你的账号能用哪些模型
 | `update config` | 查看/持久化自更新仓库 | `moliai update config --repo <owner/repo>` |
 | `doctor` | 环境自检：本机（Node 版本、配置目录、宿主、沙箱信号）+ 连接环境（网关、token、画布、模型清单） | `moliai doctor` |
 | `diagnose` | 画布内容只读体检：优先调后端 Doctor 接口（`empty` / `failed` / `rerunnable`），后端未提供该端点时降级为本地扫描（仅 `empty` + `failed`，`data.source=local`） | `moliai diagnose --out report.json` |
+| `feedback` | 提交问题反馈：自动附带脱敏后的环境诊断与本地日志；提供 `--symptom` 走非交互，不提供时在本地终端交互问答 | `moliai feedback --symptom "run 提交后一直 queued" --yes` |
 | `help [command]` | 命令树；给命令名时输出该命令的帮助（等价于 `<command> --help`）；加 `--json`（仅不带命令名）输出结构化命令树 | `moliai help task` · `moliai help --json` |
 | `schema <command>` | 单条命令的结构（参数、默认值、可选值、输出字段） | `moliai schema run` |
 
@@ -1420,11 +1421,23 @@ moliai apply -f plan.json --prune --yes           # 搭建 + 删除组内计划�
 | `--run` | 建完节点后按依赖顺序提交生成（⚠️ 扣费；默认不生成） |
 | `--prune` | 删除同组内计划外节点（⚠️ 破坏性；必须 `--yes`，计划必须声明 `group`） |
 | `--max-nodes <n>` | `--prune` 删除上限（默认 20）。**候选超过上限即使带 `--yes` 也拒绝**，要显式提高上限 |
-| `--max-cost <n>` | `--run` 预估消耗上限（魔力值，也可用 `MOLIAI_MAX_COST`）；无法预估或超限时整批零提交 |
+| `--max-cost <n>` | `--run` 预估消耗上限（魔力值，也可用 `MOLIAI_MAX_COST`）；无法预估或超限时整批零提交。报价前 CLI 已按参数契约补齐计费关键参数（如 `duration`），所以报价与实际提交的参数一致 |
 | `--concurrency <n>` | `--run` 并发节点数 1..10（默认 1）。**计划内存在依赖边时只允许 1** |
 | `--continue-on-error` | `--run` 某节点失败后继续后续节点（默认首个失败即停） |
 | `--wait` / `--deadline` | `--run` 单节点等待秒数（默认 90）/ 任务截止秒数（默认 3600） |
 | `--yes` | 确认 `--prune` 的删除（缺省以退出码 10 拒绝） |
+
+**`--run` 的计费参数会按契约补默认值**：计划里的 video 节点没写 `duration`（或 `resolution`）时，CLI 按该模型参数契约的 `default` 补上，并在 `run.nodes[].warnings` 里说明：
+
+```text
+未指定 duration：使用参数契约默认值 5（模型 ark::doubao-seedance-2.0；用 --set duration=<值> 可覆盖）
+```
+
+- 补值提示写在 **`run.nodes[].warnings`**（按节点分桶），**不是**顶层 `warnings`；顶层 `warnings` 只有阶段级提示（例如「有 N 个节点无法构建提交请求」）。脚本按顶层 `warnings` 读取会漏掉这些补值提示，要逐节点读 `run.nodes[]`
+- 补值只影响**本次提交的请求体与报价**，不写回计划文件、不改画布上已有参数
+- `duration` 参与计费（视频成本 ≈ 单价 × 时长）。不补就会少算一个乘数、报价偏低，所以 CLI 必须补；契约没声明 `default` 时**直接报 `MOLIAI_ARG_INVALID`**（批量/计划路径进 `blockers`，整批零提交），不会编一个值
+- ⚠️ 补上的是**计价与提交口径的默认档位**，不等于「CLI 决定了最终生成时长」：生成由模型按该参数执行；要别的时长请显式 `--set duration=<值>`
+- 因为报价已按补齐后的参数计算，`apply -f plan.json --run --dry-run` 的 `estimatedCost` 可能与旧版本不同（例如 seedance 未写 `duration` 时从 2 变 10），以本次 dry-run 输出为准
 
 计划格式：
 
@@ -2105,7 +2118,7 @@ moliai task cancel --where 'type=video&status=failed' --yes
 
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
-| `upload` | 上传本地媒体到画布素材库，返回 `storageKey` 与 `mediaId` | `moliai upload ./cover.png <canvasId>` |
+| `upload` | 上传本地媒体到画布素材库，返回 `storageKey` 与 `mediaId`。**只上传、不建节点**：要用作参考素材，先 `node create "<名>" -t image --x 0 --y 0 --media-url <storageKey> --media-id <mediaId>` 让画布节点承载，之后 `run --ref-*` 仍传同一个 `storageKey` | `moliai upload ./cover.png <canvasId>` |
 | `download` | 下载节点或任务的产物到本地（同名默认不覆盖，`--force` 覆盖） | `moliai download <nodeId> -o ./out` |
 | `download --task <taskId>` | 按任务下载（与节点参数二选一）：自动识别 `mediaUrl` / `videoUrl` / `imageUrl` / `audioUrl` / `storageKey` 等产物字段，视频 / 图片 / 音频生成任务都适用 | `moliai download --task <taskId> -o ./out` |
 | `download --watermark-text <文本>` | 下载后**本地**叠加文字水印（需 ffmpeg） | `moliai download <nodeId> --watermark-text "© 我的水印"` |
@@ -2863,10 +2876,31 @@ moliai run "主图" --max-cost 10 ...       # 参数优先于环境变量
 
 优先级：`--max-cost` > `MOLIAI_MAX_COST` > 不设上限。`--max-cost 0` 是有效值（任何消耗都超限）。
 
+**估算前已按参数契约补齐计费关键参数**：video 生成缺 `duration` / `resolution` 时，CLI 先按模型参数契约的 `default` 补齐（补了什么写在 `warnings`：单节点 `run` 在顶层 `warnings`，`group run` 在 `data.nodes[].warnings`，`apply --run` 在 `data.run.nodes[].warnings`），再调 `/billing/estimate`——所以 `estimatedCost` 反映的是**将要提交的那份参数**，不会因为缺计费乘数而偏低。契约没声明 `default` 时直接报 `MOLIAI_ARG_INVALID`，既不编值也不提交；补的默认档位只是计价与提交口径，不是「CLI 替你决定了最终生成时长」。
+
 > ⚠️ 口径是**预估**：CLI 用与真实提交相同的口径（resolve 后的模型 + prepare 归一化参数）调用
 > `/billing/estimate`，但**不保证实扣一定不超过上限**——后端最终按实际用量结算。
 
 参考素材（`--ref-image` / `--ref-video` / `--ref-audio`）只来自显式参数，CLI 不会从画布连线去猜。默认会在 prompt 开头自动插入素材引用标记，`--no-auto-mention` 可关闭。
+
+**每条参考素材都必须被同一画布上的节点承载**（单节点 `run` 的 `--ref-*` 执行时校验）：CLI 在发出任何 prepare 请求之前检查一遍，只要有一条素材在画布上找不到承载节点，就报 `MOLIAI_ARG_INVALID`（退出码 2），`error.message` 列出**全部**未锚定的引用，`details.unanchored` 给 `{ kind, reference }`，`hint` 给建节点示例：
+
+```bash
+# ❌ 上传后直接当参考：画布上没有节点承载这个素材
+moliai upload ./cover.png <canvasId>          # → storageKey / mediaId
+moliai run "镜头-01" --ref-image <storageKey>  # → MOLIAI_ARG_INVALID（未锚定）
+
+# ✅ 先让节点承载，再引用同一素材
+moliai node create "封面" -t image --x 0 --y 0 --media-url <storageKey> --media-id <mediaId>
+moliai run "镜头-01" --ref-image <storageKey>
+```
+
+- `--ref-*` 的取值是 **`storageKey` 或本系统 CDN 地址**，不是节点名 / 节点 id；CLI 校验的是「这个素材在画布上有没有节点承载」
+- **没有跳过开关**：不提供 `--allow-unanchored` 之类的后门，未落节点的素材一律拒绝
+- `--dry-run` 同样失败：校验发生在 prepare 之前，预览也不放过
+- ⚠️ **这条约束只作用于 CLI，不是安全边界**：直接调 `POST /api/canvases/{id}/generate`（`Kind.MEDIA`）仍然可以带裸 `storageKey` 绕过；后端目前仍接受无节点来源的引用
+
+> 为什么拦：没有节点承载的素材在画布上既不能被选中/追溯，也等于让 Agent 绕过节点模型（`upload` 拿 key → 直接 `run --ref-image`）。
 
 ### 作业标签：`--label` / `MOLIAI_AGENT_LABEL`
 
@@ -3202,8 +3236,66 @@ Remove-Item Env:MOLIAI_JSON_NO_ESCAPE
 ## 支持与反馈
 
 - 平台与账号问题：[aidancevid.com](https://aidancevid.com)
-- 提交问题反馈时，请附上错误响应中的 `code` 与 `traceId`，便于定位
-- 请勿在反馈中粘贴 API KEY、token 或完整凭据
+- CLI 本身的问题用 `moliai feedback` 提交，**不要手抄环境信息**：命令会把命令、`traceId`、`doctor` 诊断与本机日志一起带上
+- 请勿在反馈中粘贴 API KEY、token 或完整凭据（提交时自动脱敏，但手写正文里的凭据请自行处理）
+
+### `feedback`：把问题反馈给后端
+
+```bash
+# 交互（本地终端）：逐项提问 → 预览 → 确认提交
+moliai feedback
+
+# 非交互（Agent / 脚本）：信息全部来自选项，必须 --yes
+moliai feedback --symptom "run 提交后一直 queued" --yes
+
+moliai feedback --symptom "超分报 400" \
+  --steps "1. moliai derive super-resolution ... 2. 加 --run" \
+  --expected "创建节点并提交任务" \
+  --actual "400 UNSUPPORTED_IMAGE_SIZE" \
+  --command "moliai derive super-resolution <nodeId> --size 1080p --run" \
+  --category bug --yes
+```
+
+| 选项 | 说明 |
+|---|---|
+| `--symptom <text>` | 现象描述。提供后进入**非交互模式**（此时该值必填且不能为空白）；不提供时只有本地 TTY 能走交互问答，非 TTY 直接报 `MOLIAI_ARG_INVALID`，提示改用 `--symptom "<现象>" --yes` |
+| `--steps` / `--expected` / `--actual` / `--command` | 复现步骤 / 期望 / 实际 / 当时执行的命令，均可省略 |
+| `--category <text>` | 分类，如 `bug` / `cost` / `api` / `other` |
+| `--log <path>` | 额外附加一个日志文件（与本机日志一起提交）；**与 `--no-logs` 互斥** |
+| `--no-logs` | 不附带本机日志 |
+| `--no-diagnostics` | 不附带 `doctor` 诊断 |
+| `--yes` | 跳过预览确认（非交互模式必需） |
+
+提交前会在 **stderr** 打印摘要预览（现象首行、日志大小与是否截断、诊断条数），**日志与诊断正文一律不上屏**——`--json` 的 stdout 始终是纯信封。
+
+自动附带的内容：
+
+| 类别 | 内容 |
+|---|---|
+| 环境 | CLI 版本、`baseUrl`、宿主、OS、Node 版本、目录绑定的 `projectId` / `canvasId` |
+| 诊断 | `doctor` 的检查结果（渲染成文本，每项一行） |
+| 日志 | 本机日志最近 2MB；**先脱敏、再 gzip 压缩、再 base64**（网关请求体上限 1MB，明文 2MB 到不了后端）。压缩后 base64 仍超 900KB 时显式报错，不会「悄悄少交日志」 |
+| `traceIds` | 从日志里提取最近 5 个 `traceId=...`，便于后端把反馈与链路对上 |
+
+- 脱敏是双层的：CLI 提交前对全部自由文本与日志做一次（`Authorization` 请求头、`?token=` / `?signature=` 等查询参数、`key|token|secret|password|credential` 形态、本机用户名与邮箱、`moli_` 前缀 KEY），后端落库前再做一次
+- 输出字段只回显「提交了什么」的统计，不回显正文：`id` / `createdAt` / `logBytes` / `logTruncated` / `diagnosticLines` / `traceIds[]` / `includedLogs` / `includedDiagnostics`
+- 后端不支持该接口（`POST /cli/feedback` 返回 404）时报 `MOLIAI_UNSUPPORTED`，不会假装提交成功
+- 反馈的查询与分诊（`GET|PATCH /api/open/cli-feedback`，静态 token）是运维侧接口，契约见 [migrated-java-apis/cli-feedback.md](../docs/migrated-java-apis/cli-feedback.md)
+
+### 本地日志
+
+CLI 每次运行都会写本地日志，**只写文件，不写 stdout / stderr**（`--json` 输出不受影响）：
+
+| 项 | 值 |
+|---|---|
+| 目录 | `~/.moliai/logs/`（受 `MOLIAI_CONFIG_DIR` 影响；`MOLIAI_LOG_DIR` 可覆盖） |
+| 文件 | `cli.log`，轮转为 `cli.log.1` … `cli.log.4` |
+| 上限 | 单文件 5MB，共 5 个文件（约 25MB） |
+| 格式 | 单行文本，如 `2026-11-28T16:12:03.412Z [INFO] command=apply argv="apply -f plan.json --run"`、`2026-11-28T16:12:05.001Z [ERROR] code=MOLIAI_INTERNAL_ERROR message="..." traceId=-` |
+| 脱敏 | 写入前先脱敏 |
+
+- 日志写入失败（磁盘满、目录只读）**不会影响命令本身**，但会记录在进程内状态；`moliai feedback` 检测到「本机日志曾写入失败」时会如实说明，不会把空日志当成「最近没出过错」
+- 目前不提供关闭日志的开关：没有日志会让反馈缺少上下文
 
 ## 测试交付说明
 

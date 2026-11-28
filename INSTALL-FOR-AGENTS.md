@@ -45,13 +45,13 @@ CLI 是闭源软件，源码不公开，以单文件可执行程序分发。
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install.sh | sh
 ```
 
 **Windows（PowerShell）**
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install-boot.ps1 | iex
 ```
 
 注意：不要用 `irm .../install.ps1 | iex`。该文件带 UTF-8 BOM，管道进 `Invoke-Expression` 会导致 `ParseException`（PowerShell 5.1 和 7.x 均如此）。`install-boot.ps1` 是无 BOM 的纯 ASCII 引导脚本，负责下载并按 UTF-8 解码执行真正的安装器。
@@ -67,14 +67,14 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install-boot
 如果执行环境不允许运行远程脚本，先下载审查内容再执行：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh -o install.sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install.sh -o install.sh
 # 检查内容后再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows：下载后执行，install.ps1 在这条路径下是正常的
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.15/install.ps1 -OutFile install.ps1
 # 检查内容后再执行
 .\install.ps1
 ```
@@ -115,7 +115,7 @@ sha256sum -c SHA256SUMS.txt
 > **⚠️ 暂未发布，请勿执行。** `@moliai/cli` 尚未发布到 npm，请使用 2.1 或 2.2 的 GitHub Release 方式安装。以下命令仅供发布后参考。
 
 ```bash
-npm install -g @moliai/cli@0.10.14
+npm install -g @moliai/cli@0.10.15
 ```
 
 包名是 `@moliai/cli`，安装后的命令名是 `moliai`；这条路线需要 Node.js **≥ 20**。
@@ -126,7 +126,7 @@ npm install -g @moliai/cli@0.10.14
 ## 3. 验证安装
 
 ```bash
-moliai --version    # 应输出 0.10.14
+moliai --version    # 应输出 0.10.15
 moliai help         # 应列出命令树
 moliai doctor       # 本机自检，恒以退出码 0 结束，看 data.healthy
 ```
@@ -276,6 +276,25 @@ moliai project list  # 只读接口，验证鉴权链路真的通
 - **不自动重试收费操作**：`run` 失败后不要换模型、不要改参数、不要降分辨率重试；把失败原因与 `jobId` / `taskId` 报给用户
 - 网络类错误（`MOLIAI_NETWORK_ERROR` / `MOLIAI_RATE_LIMITED`）可以有限次退避重试，其余错误一律不重试
 - 遇到未登记的错误码直接停止并说明，不要兜底
+
+### 需要上报时：用 `moliai feedback`，不要手抄现场
+
+```bash
+moliai feedback --symptom "run 提交后一直 queued" \
+  --steps "moliai run 镜头-01 --model <k>" \
+  --expected "提交后进入 processing" \
+  --actual "10 分钟仍是 queued" \
+  --command "moliai run 镜头-01 --model <k>" \
+  --category bug --yes
+```
+
+- **非交互环境（Agent / 管道 / CI）必须同时传 `--symptom` 与 `--yes`**；不传 `--symptom` 时只允许在本地终端交互问答，非 TTY 会直接报 `MOLIAI_ARG_INVALID`
+- 自动附带：CLI 版本 / `baseUrl` / OS / Node 版本、`doctor` 诊断（文本）、本机日志最近 2MB、最近 5 个 `traceId`；提交前自动脱敏（token、`Authorization` 请求头、`?token=` / `?signature=`、`key|token|secret|password|credential` 形态、本机用户名与邮箱、`moli_` KEY）
+- 想连额外文件：`--log ./worker.log`；不想交日志 / 诊断：`--no-logs` / `--no-diagnostics`（`--no-logs` 与 `--log` 互斥）
+- 预览只打摘要且走 stderr，**日志与诊断正文不会打印**（`--json` 的 stdout 保持纯信封）
+- 日志位置：`~/.moliai/logs/cli.log`（单文件 5MB、共 5 个文件轮转）；日志写入失败不影响命令本身
+- 后端没有该接口时（`POST /cli/feedback` 404）报 `MOLIAI_UNSUPPORTED`——如实告诉用户，不要改用邮件/聊天粘贴日志
+- 反馈里**不要附 KEY、token、`credentials.json` 内容**；需要手写时只给 `code` + `traceId` + 执行命令（KEY 换成 `<REDACTED>`）
 
 ## 9. 装好之后
 

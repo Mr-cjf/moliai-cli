@@ -6,6 +6,39 @@
 
 （无）
 
+## [0.10.15] - 2026-11-28
+
+### 新增
+
+- `feedback` 命令：把一次问题反馈提交给后端（`POST /cli/feedback`），自动附带脱敏后的 `doctor` 诊断、本机日志
+  （最近 2MB，先 gzip 再 base64；压缩后 base64 上限 900KB，超限显式报错）与环境信息（版本 / `baseUrl` / OS / Node）。
+  提供 `--symptom` 时走非交互（需 `--yes`），不提供时仅本地 TTY 交互问答；`--no-logs` / `--no-diagnostics` 关闭附带内容，
+  `--log <path>` 追加指定文件（与 `--no-logs` 互斥）。预览只打摘要且走 stderr，日志与诊断正文不上屏，`--json` 的 stdout 保持纯信封
+- 本地日志落盘：`~/.moliai/logs/cli.log`，单文件 5MB，轮转为 `cli.log.1`..`cli.log.4`（共 5 个文件）。
+  **只写文件，不写 stdout / stderr**（不影响 `--json` 解析），写入前脱敏；日志写入失败不影响命令本身
+- 后端（配套）：`GET|PATCH /api/open/cli-feedback` 反馈查询 / 详情 / 分诊接口，静态 token 鉴权（未配置 token 时全部 401），
+  保留 30 天后由后端清理任务分批物理删除
+
+### 修复
+
+- video 生成缺 `duration` 时报价偏低：`run` / `run --where` / `group run` / `apply --run` 此前不补 `duration`，
+  `/billing/estimate` 少算一个乘数。现在按模型参数契约 `default` 补齐并给 warning
+  「未指定 duration：使用参数契约默认值 5（模型 X；用 --set duration=<值> 可覆盖）」（单节点 `run` 在顶层 `warnings`；
+  `group run` / `apply --run` 在 `nodes[].warnings`，即 `data.nodes[].warnings` / `data.run.nodes[].warnings`），报价与将要提交的参数一致
+  （如 seedance 未写 `duration` 时从 2 变 10）。契约未声明默认值时直接 `MOLIAI_ARG_INVALID`，不提交、不给偏低报价
+
+### 变更（行为变更）
+
+- ⚠️ **单节点 `run` 的 `--ref-image` / `--ref-video` / `--ref-audio` 现在要求每条素材被同一画布的节点承载**：
+  `upload` 只返回 `storageKey` / `mediaId`、不建节点；未落节点的引用会在**任何 prepare 请求之前**报
+  `MOLIAI_ARG_INVALID`（退出码 2），`message` 一次列出全部未锚定项，`details.unanchored` 给 `{ kind, reference }`。
+  无跳过开关，`--dry-run` 同样失败。依赖「upload 后直接 `run --ref-* <storageKey>`」的脚本需改为
+  先 `node create --media-url <storageKey> --media-id <mediaId>` 让节点承载该素材，再引用**同一个 `storageKey`**
+  （`--ref-*` 的取值是 storageKey / CDN 地址，不是节点名）
+- ⚠️ **该约束只作用于 CLI，不是安全边界**：直接调 `POST /api/canvases/{id}/generate`（`Kind.MEDIA`）仍可带裸
+  `storageKey` 绕过；后端目前仍接受无节点来源的引用
+- 因上述计费参数补齐，`apply -f plan.json --run --dry-run` 的 `estimatedCost` 可能与旧版本不同，以本次 dry-run 输出为准
+
 ## [0.10.14] - 2026-11-28
 
 ### 新增

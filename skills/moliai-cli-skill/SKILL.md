@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.10.14"
+  version: "0.10.15"
 ---
 
 # MoliAi CLI Skill
@@ -128,14 +128,19 @@ metadata:
 | 按 clientRequestId 找回 | `moliai task list --client-request-id <id>`（可单独用，不需要 `--canvas`；未命中报 `MOLIAI_NOT_FOUND`） |
 | 实时观察任务 | `moliai task watch <taskId> --output text`（状态/进度变化各打印一行，终态退出；失败退出码 6） |
 | 取消任务（不退费） | `moliai task cancel <taskId> --yes`（只有 queued/processing 会被取消） |
+| 反馈问题（自动附带脱敏诊断与日志） | `moliai feedback --symptom "<现象>" --steps "..." --yes`（本地终端可去掉 `--symptom` / `--yes` 走交互问答；非 TTY 必须显式传 `--symptom`） |
+| 查本机日志 | `~/.moliai/logs/cli.log`（单文件 5MB、共 5 个文件轮转；只写文件，不写 stdout/stderr） |
 
 ## 成本安全规则
 
 1. **`run` 前必须先 `--dry-run`**，读 `data.estimatedCost`。这是唯一零成本路径（只调 prepare + billing/estimate，不建任务、不预扣费）。
 2. `estimatedCost` 为 `null` 时**不代表免费**，只代表算不出来；同时看 `warnings` 里的 `ESTIMATE_UNAVAILABLE` / `ESTIMATE_UNSUPPORTED`。若拿不到成本，提交前必须告知用户。
 3. **视频成本 ≈ 单价 × 时长**，`480p` 与 `720p` 单价通常差一倍。改 `duration` 或 `resolution` 后必须重跑 `--dry-run`。
-   视频生成（`taskType=video`）必须显式给出 `resolution`：模型参数契约声明了 `default` 时 CLI 会补上并在 `warnings` 里说明；
+   视频生成（`taskType=video`）必须显式给出 `resolution`：模型参数契约声明了 `default` 时 CLI 会补上并在 `warnings` 里说明（位置：单节点 `run` 在顶层 `warnings`；`group run` 在 `data.nodes[].warnings`、`apply --run` 在 `data.run.nodes[].warnings`，**按顶层读会漏掉**）；
    契约没有默认值时 CLI 直接报错并列出可选档位（`moliai run <节点> --set resolution=720p`）——CLI 不从候选档位里替你挑一个，后端也不再猜。
+   **`duration` 同样参与计费**：未指定时按参数契约 `default` 补齐并给 warning「未指定 duration：使用参数契约默认值 5（模型 …；用 --set duration=<值> 可覆盖）」。
+   补上的是**计价与提交口径**，不是「免费」，也不是「CLI 决定了最终生成时长」——要别的时长就显式 `--set duration=<秒>`；
+   契约没声明默认值时同样直接报 `MOLIAI_ARG_INVALID`，既不编值也不给出偏低报价。
 4. **用户未明确要求时不真实提交**。默认只执行 `--dry-run`，把模型、参数、成本呈现给用户，等确认后再提交。
 5. 重复提交用同一 `--client-request-id` 走后端幂等（`deduped=true`），不会重复扣费。
 6. **成本上限**：`--max-cost <n>`（或环境变量 `MOLIAI_MAX_COST`，参数优先）在**提交前**校验预估消耗；
@@ -647,6 +652,20 @@ moliai apply -f plan.json --prune --yes           # 搭建 + 清理（删除，2
    画布一律用 `--canvas`；固定参数命令（`node list <canvasId>`）的位置参数写法照旧可用。
 3. **`--prompt` 里不要手写 `<mention>`**：CLI 不自动插入也不展开，原样透传给后端；后端会把 `<mention>`
    编译成 `@视频N` 引用，定位不到直接 400。需要引用画布素材时写描述性文字，不要手拼 `<mention>` 标签。
+4. **`--ref-*` 的素材必须先在画布上有节点承载**：`upload` 只返回 `storageKey` / `mediaId`，不建节点。
+   直接 `moliai run ... --ref-image <storageKey>` 会在**任何 prepare 请求之前**报 `MOLIAI_ARG_INVALID`（退出码 2），
+   `message` 列出全部未锚定的引用、`details.unanchored` 给 `{ kind, reference }`。正确做法：
+   `moliai node create "<名>" -t image --x 0 --y 0 --media-url <storageKey> --media-id <mediaId>` 让节点承载该素材，
+   之后 `--ref-*` **仍传同一个 `storageKey`**（参数取值是 storageKey / CDN 地址，不是节点名或节点 id）。
+   没有跳过开关，`--dry-run` 同样失败。⚠️ 这条约束**只作用于 CLI，不是安全边界**：直接调后端生成接口仍可绕过。
+5. **「没写 `duration` 也能跑」不等于免费**：video 生成缺 `duration` 时 CLI 按参数契约 `default` 补齐并给 warning，
+   报价也按补齐后的值算（例如 seedance 从 2 变 10）。补的是计价与提交口径，不是「免费」；要别的时长显式
+   `--set duration=<秒>`。契约没声明默认值时直接 `MOLIAI_ARG_INVALID`，不会给偏低报价。
+6. **上报问题用 `moliai feedback`，不要手抄现场**：
+   `moliai feedback --symptom "<现象>" --steps "..." --command "<当时执行的命令>" --yes` 会自动附带脱敏后的
+   `doctor` 诊断、本机日志（最近 2MB）与 `traceId`。非 TTY 环境必须传 `--symptom` 与 `--yes`；
+   `--no-logs` / `--no-diagnostics` 可关闭（`--no-logs` 与 `--log <path>` 互斥）。日志正文不会上屏，
+   也不要把日志整段贴进聊天/工单。
 
 ## 任务取消（`task cancel`）
 
@@ -725,6 +744,7 @@ moliai apply -f plan.json --prune --yes           # 搭建 + 清理（删除，2
 - 409 报 `MOLIAI_CONFLICT`：按 hint 重新读取最新数据后重试（版本冲突可省略 `--expected-version`、节点已属其他编组先 `group remove-member`），**不要**当成 bug 去反馈。
 - 参数与环境类错误不重试，按 hint 修正后重跑；网络/限流可有限次退避重试。
 - 不静默兜底：不换模型、不删参数、不跳过失败步骤来"让它跑通"。未知错误码直接停止并向用户说明。
+- 需要上报给后端时用 `moliai feedback --symptom "<现象>" --yes`：自动附带脱敏后的 `doctor` 诊断与本机日志（`~/.moliai/logs/`，只写文件不污染 stdout）。不要在反馈或聊天里贴 token / KEY / `credentials.json` 内容。
 
 ## 环境变量
 

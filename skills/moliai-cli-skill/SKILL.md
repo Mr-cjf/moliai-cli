@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.10.10"
+  version: "0.10.11"
 ---
 
 # MoliAi CLI Skill
@@ -55,7 +55,7 @@ metadata:
 |---|---|
 | 当前环境 / 已登录环境 | `moliai env` |
 | 身份/连通性 | `moliai whoami`（`data.balance` 是真实余额，`quota` 只是本地占位） |
-| 项目 → 画布 | `moliai project list` → `moliai canvas list -w <projectId>`；没有项目时 `moliai project create "<名称>"`（**CLI 只支持 `canvas`/无限画布模式**，顺带建一张同名画布；传统模式 `novel-promotion` 项目没有画布、CLI 无法操作，会直接报错，请到网页端创建；不自动写目录绑定，按输出 `next` 继续）。`project list` 分页：`--limit` 每页 1..200（默认 20）、`--page` **从 1 开始**；信封带 `count` / `total` / `hasMore`，**`hasMore=true` 就是还有下一页**，别把默认 20 条当成全部项目 |
+| 项目 → 画布 | `moliai project list` → `moliai canvas list -w <projectId>`；没有项目时 `moliai project create "<名称>"`（**CLI 只支持 `canvas`/无限画布模式**，顺带建一张同名画布；传统模式 `novel-promotion` 项目没有画布、CLI 无法操作，会直接报错，请到网页端创建；不自动写目录绑定，按输出 `next` 继续）。`project list` 分页：`--limit` 每页 1..200（默认 20）、`--page` **从 1 开始**；信封带 `page`（1 起，回显实际传入页码）/ `count` / `total` / `hasMore`，**`hasMore=true` 就是还有下一页**，别把默认 20 条当成全部项目 |
 | 绑定画布到当前目录 | `moliai canvas use <canvasId>` |
 | 看画布与节点 | `moliai canvas show` / `moliai node list --limit 200` |
 | 画布体检（只读，零扣费） | `moliai diagnose` → 先看 `data.source`（`server` = 后端 Doctor 报告，`local` = 后端无该路由时的本地降级）；再按 `empty` / `failed` / `rerunnable` 查看问题，`--out report.json` 落盘 |
@@ -86,9 +86,9 @@ metadata:
 | 长任务接续 | `moliai wait <jobId> --max 60` / `moliai jobs --active` |
 | 作业标签（并行 Agent 区分） | `moliai run <node> ... --label agent-a` → `moliai jobs --label agent-a`（也可用 `MOLIAI_AGENT_LABEL`） |
 | 完成通知 | `moliai run <node> ... --notify desktop`（或 `--notify 'cmd:<本地命令>'`；`run` / `wait` 单节点通知，批量命令整批汇总一条） |
-| 查任务/下载 | `moliai task get <taskId>`（加 `--with-result` 看完整 result；默认只给 resultSummary 摘要）/ `moliai download --task <taskId> -o ./out`（`--task` 要求任务已完成；产物字段自动识别 `mediaUrl` / `videoUrl` / `imageUrl` / `audioUrl` / `storageKey` 等，生成视频/图片/音频的任务都能用；全都没有时报 `MOLIAI_NOT_FOUND` 并列出 result 实际字段） |
+| 查任务/下载 | `moliai task get <taskId>`（加 `--with-result` 看完整 result；默认只给 resultSummary 摘要）/ `moliai download --task <taskId> -o ./out`（`--task` 要求任务已完成；产物字段自动识别 `mediaUrl` / `videoUrl` / `imageUrl` / `audioUrl` / `storageKey` 等，生成视频/图片/音频的任务都能用；全都没有时报 `MOLIAI_NOT_FOUND` 并列出 result 实际字段；**不传 `-o` 也会下载**，文件落在当前工作目录，`warnings` 给出绝对路径） |
 | 按节点下载 | `moliai download <nodeId\|nodeName> [canvasId] -o ./out`（与 `--task` 二选一；加 `--watermark-text` / `--watermark-image` 需本机 ffmpeg，水印参数在下载前校验） |
-| 列任务与翻页 | `moliai task list --limit 50 --page 0`（输出 `total` / `hasMore`；旧后端这两项为 `null`） |
+| 列任务与翻页 | `moliai task list --limit 50 --page 0`（输出 `total` / `hasMore`；旧后端这两项为 `null`；`data.page` 是 **0 起**，与 `project list` 的 1 起不同，别把页码直接跨命令复用） |
 | 按 clientRequestId 找回 | `moliai task list --client-request-id <id>`（可单独用，不需要 `--canvas`；未命中报 `MOLIAI_NOT_FOUND`） |
 | 实时观察任务 | `moliai task watch <taskId> --output text`（状态/进度变化各打印一行，终态退出；失败退出码 6） |
 | 取消任务（不退费） | `moliai task cancel <taskId> --yes`（只有 queued/processing 会被取消） |

@@ -6,6 +6,20 @@
 
 （无）
 
+## [0.10.11] - 2026-11-28
+
+### 新增
+
+- `task list` / `project list` 的 `data` 新增 `page` 字段，回显实际页码（task 为 0 起、project 为 1 起，沿用各自后端契约）。
+
+### 修复
+
+- `download` 未指定 `-o` 时，`warnings` 会提示文件将写入的绝对目录（此前静默写入当前工作目录）。
+  注意：`download --output text` 在未指定 `-o` 时，stdout 会多一行 `warning: …`。
+  若有脚本按行解析该输出（如只认 `files:` / `savedTo:` 行），需容忍这一行；
+  `--json` / `--ndjson` 的 `data` 结构不变。
+- `project create --help` 的 `-d` 说明补齐空串语义（不传 / 传空串 / 传全空白都等同于不设置；`project update` 的空串是清空，二者不同）。
+
 ## [0.10.10] - 2026-11-27
 
 ### 变更

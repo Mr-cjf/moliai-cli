@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.10.11"
+  version: "0.10.12"
 ---
 
 # MoliAi CLI Skill
@@ -31,6 +31,38 @@ metadata:
 - `MOLIAI_NOT_BOUND` + hint 指向 `moliai login key --base-url <url>` = 该环境没登录过，让用户提供该环境的 KEY，**不要**复用别的环境的凭据
 - `moliai logout` 会删掉**所有环境、所有账号**（`--account` / `MOLIAI_ACCOUNT` 只影响本次调用用哪个账号，拦不住它）；只想清一个环境用 `moliai env remove <url>`（该环境有多个账号时加 `--yes`）、单个账号用 `moliai account remove <标识> --yes`，且需用户同意。**`logout` 只删 `credentials.json`**：`~/.moliai/jobs/`（作业记录）、`~/.moliai/pending/`、`~/.moliai/config.json` 与目录绑定都还在；要彻底清理须由用户手动删整个配置目录
 - 全局 `--account` 对 `login` 保存的 `accountId` 无效：保存的 `accountId` 由新 token 的 `userId` 决定；只有 `login key --account <name>` 才影响账号命名
+
+## 多账号 / 多会话并行
+
+`env` 按 `baseUrl` 区分环境；`account` 是**同一 baseUrl 下**的多个账号（按 userId 索引，各自独立令牌）。一个环境可以存多个账号。
+
+| 目的 | 命令 |
+|---|---|
+| 看该环境有哪些账号 / 本次用哪个 | `moliai account list`（`activeAccount` = 本次实际用的，`defaultAccount` = 默认的） |
+| 切默认账号（不重新登录） | `moliai account use <userId\|昵称\|账号id>` |
+| 单次调用换账号 | 任意命令加全局 `--account <标识>`，如 `moliai whoami --account <userId\|昵称\|账号id>` |
+| 看本次用的账号 id | `moliai whoami` 的 `accountId` / `moliai status` 的 `accountId`（未认证或走 `MOLIAI_TOKEN` 时为 `null`） |
+
+- **默认账号是全局的**：`account use` 写的是凭据文件里的 `defaultAccount`，所有会话共用。两个会话各自 `account use` 会互相覆盖，**后执行的赢**。
+- **并行会话要隔离账号，用 `MOLIAI_ACCOUNT`，不要用 `account use`**：
+
+  ```powershell
+  $env:MOLIAI_ACCOUNT = "agent-a"     # Windows PowerShell
+  ```
+
+  ```bash
+  export MOLIAI_ACCOUNT=agent-a       # bash
+  ```
+
+- 账号解析优先级（前一个为空才看下一个）：
+
+  ```text
+  --account  >  MOLIAI_ACCOUNT  >  凭据文件 defaultAccount  >  该环境第一个账号
+  ```
+
+- 指定的账号匹配不到时**直接失败**（`MOLIAI_ARG_INVALID`），`details.available` 列出可用账号，不会静默换成默认账号。唯一例外：`moliai account list --account <写错的值>` 仍返回 `ok: true`，只多一条 warning 给出可用账号（诊断命令不该因为参数写错就看不见列表）。
+- `MOLIAI_TOKEN` 与 `MOLIAI_ACCOUNT` 互斥：同时设置报 `MOLIAI_ARG_INVALID`（直接给的令牌无法对应本地账号）。
+- **凭据文件并发写是安全的**：读-改-写 + 原子替换，不会写坏另一个会话的写入，所以并行会话可以放心各写各的。
 
 ## 升级 CLI（`update`）
 
@@ -636,7 +668,9 @@ moliai apply -f plan.json --prune --yes           # 搭建 + 清理（删除，2
 
 ## 环境变量
 
-`MOLIAI_BASE_URL`（后端地址覆盖，优先级低于 `--base-url`）、`MOLIAI_TOKEN`（覆盖本地凭据，必须同时设 `MOLIAI_BASE_URL`）、`MOLIAI_CANVAS`（当前画布）、`MOLIAI_CONFIG_DIR`（配置目录）、`MOLIAI_CDN_DOMAIN`（受信 CDN 域名）、`MOLIAI_AGENT_LABEL`（作业标签默认值，优先级低于 `--label`）、`MOLIAI_MAX_COST`（成本上限，优先级低于 `--max-cost`）、`MOLIAI_JOBS_DIR`（作业记录目录）、`MOLIAI_WEB_URL`（`login web` 前端站点，优先级低于 `--web-url`）、`MOLIAI_JSON_NO_ESCAPE`（`1`/`true` = 关闭 Windows 下 JSON 的 `\uXXXX` 转义；`0`/`false`/不设 = 转义；其它取值报 `MOLIAI_ARG_INVALID`）。
+`MOLIAI_BASE_URL`（后端地址覆盖，优先级低于 `--base-url`）、`MOLIAI_TOKEN`（覆盖本地凭据，必须同时设 `MOLIAI_BASE_URL`）、`MOLIAI_ACCOUNT`（本次进程使用的账号：userId / 昵称 / 账号 id；优先级低于 `--account`、高于凭据文件里的 defaultAccount；匹配不到直接报错并列出可用账号，不回退默认）、`MOLIAI_CANVAS`（当前画布）、`MOLIAI_CONFIG_DIR`（配置目录）、`MOLIAI_CDN_DOMAIN`（受信 CDN 域名）、`MOLIAI_AGENT_LABEL`（作业标签默认值，优先级低于 `--label`）、`MOLIAI_MAX_COST`（成本上限，优先级低于 `--max-cost`）、`MOLIAI_JOBS_DIR`（作业记录目录）、`MOLIAI_WEB_URL`（`login web` 前端站点，优先级低于 `--web-url`）、`MOLIAI_JSON_NO_ESCAPE`（`1`/`true` = 关闭 Windows 下 JSON 的 `\uXXXX` 转义；`0`/`false`/不设 = 转义；其它取值报 `MOLIAI_ARG_INVALID`）。
+
+`MOLIAI_ACCOUNT` 与 `MOLIAI_TOKEN` **互斥**：同时设置会直接报 `MOLIAI_ARG_INVALID`（直接给的令牌无法对应本地账号）——要指定账号就别设 `MOLIAI_TOKEN`，要直接用令牌就别指定账号。
 
 切环境优先用 `moliai env use <url>`，不要长期依赖 `MOLIAI_BASE_URL`——环境变量会盖过默认环境，容易让人误判当前用的是哪个环境。
 

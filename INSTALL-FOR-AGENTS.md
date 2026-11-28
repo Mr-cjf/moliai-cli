@@ -45,13 +45,13 @@ CLI 是闭源软件，源码不公开，以单文件可执行程序分发。
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh | sh
 ```
 
 **Windows（PowerShell）**
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install-boot.ps1 | iex
 ```
 
 注意：不要用 `irm .../install.ps1 | iex`。该文件带 UTF-8 BOM，管道进 `Invoke-Expression` 会导致 `ParseException`（PowerShell 5.1 和 7.x 均如此）。`install-boot.ps1` 是无 BOM 的纯 ASCII 引导脚本，负责下载并按 UTF-8 解码执行真正的安装器。
@@ -67,14 +67,14 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install-boot
 如果执行环境不允许运行远程脚本，先下载审查内容再执行：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install.sh -o install.sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh -o install.sh
 # 检查内容后再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows：下载后执行，install.ps1 在这条路径下是正常的
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.ps1 -OutFile install.ps1
 # 检查内容后再执行
 .\install.ps1
 ```
@@ -115,7 +115,7 @@ sha256sum -c SHA256SUMS.txt
 > **⚠️ 暂未发布，请勿执行。** `@moliai/cli` 尚未发布到 npm，请使用 2.1 或 2.2 的 GitHub Release 方式安装。以下命令仅供发布后参考。
 
 ```bash
-npm install -g @moliai/cli@0.10.11
+npm install -g @moliai/cli@0.10.12
 ```
 
 包名是 `@moliai/cli`，安装后的命令名是 `moliai`；这条路线需要 Node.js **≥ 20**。
@@ -126,7 +126,7 @@ npm install -g @moliai/cli@0.10.11
 ## 3. 验证安装
 
 ```bash
-moliai --version    # 应输出 0.10.11
+moliai --version    # 应输出 0.10.12
 moliai help         # 应列出命令树
 moliai doctor       # 本机自检，恒以退出码 0 结束，看 data.healthy
 ```
@@ -197,9 +197,35 @@ printf %s "<KEY>" | moliai login key --base-url "<用户提供的 baseUrl>"
 - 环境不对时**不要自己改默认环境**——先向用户确认目标环境，再由用户决定是否执行 `moliai env use <url>`
 - 只想临时换环境，用全局参数而不是改默认：`moliai project list --base-url "<url>"`
 - 报 `MOLIAI_NOT_BOUND` 且 `hint` 指向 `moliai login key --base-url <url>` → 该环境没登录过，让用户提供该环境的 KEY，不要复用另一个环境的凭证
-- 不要执行 `moliai logout`（会删掉**所有环境、所有账号**的凭据，`--account` / `MOLIAI_ACCOUNT` 也拦不住）。
+- 不要执行 `moliai logout`（会删掉**所有环境、所有账号**的凭据；`--account` / `MOLIAI_ACCOUNT` 只决定本次调用用哪个账号，见 5.2，拦不住它）。
   只清理单个环境用 `moliai env remove <url>`——该环境有多个账号时必须加 `--yes`（否则返回退出码 10 / `MOLIAI_CONFIRM_REQUIRED`，提示会说明要删除几个账号），单账号环境不需要加；
   只清理单个账号用 `moliai account remove <标识> --yes`。以上操作都必须经用户同意
+
+### 5.2 多账号
+
+同一环境可按 userId 存多个账号（各自独立令牌），标识可以是 userId、昵称或账号 id（昵称重复时必须用 userId）：
+
+- 查看：`moliai account list`（`activeAccount` 是本次实际会用的账号，`defaultAccount` 是默认账号）
+- 切默认账号：`moliai account use <标识>`——**改的是全局默认，影响所有会话**，先确认用户意图再执行
+- 单次指定：全局选项写在命令前面，`moliai --account <标识> <命令>`（如 `moliai --account <标识> whoami`）
+- 账号解析优先级（前一个为空才看下一个）：
+
+  ```text
+  --account  >  MOLIAI_ACCOUNT  >  凭据文件 defaultAccount  >  该环境第一个账号
+  ```
+
+- **并行会话各用各的账号：设 `MOLIAI_ACCOUNT`，不要用 `account use`**（默认账号是全局的，两个会话各自 `account use` 会互相覆盖）：
+
+  ```powershell
+  $env:MOLIAI_ACCOUNT = "agent-a"   # Windows PowerShell
+  ```
+
+  ```bash
+  export MOLIAI_ACCOUNT=agent-a     # bash
+  ```
+
+- `MOLIAI_TOKEN` 与 `MOLIAI_ACCOUNT` 互斥，同时设置会报 `MOLIAI_ARG_INVALID`
+- 账号写错会显式失败并列出可用账号（`details.available`），不会静默换成别的账号；例外是 `moliai account list --account <写错的值>`，它仍返回 `ok: true` + 一条 warning
 
 ## 6. 联通验证
 
@@ -215,6 +241,9 @@ moliai project list  # 只读接口，验证鉴权链路真的通
 判定标准：
 
 - `status.data.authenticated === true` 且 `status.data.connectivity.ok === true` → 后端连通正常
+- `moliai status` 的 `accountId` 是本次实际使用的账号（恒存在，未认证 / 使用 `MOLIAI_TOKEN` / 账号匹配失败时为 `null`）；
+  账号匹配失败不会让 `status` 失败（退出码仍 0），错误在 `connectivity.error` 里
+- 要核对「我这个会话用的是哪个账号」，用 `moliai whoami` 或 `moliai status` 的 `accountId`
 - `status.data.connectivity.error` 非 `null` → 按 `error.code` 定位（`error.hint` / `error.details` 里带完整诊断信息，
   例如账号名写错时 `details.available` 直接列出可用账号，不必再跑 `account list`）：
   - `MOLIAI_AUTH_REQUIRED` / `MOLIAI_TOKEN_EXPIRED` → 凭据无效或过期，回到第 5 步

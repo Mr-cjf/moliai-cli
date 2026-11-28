@@ -6,6 +6,20 @@
 
 （无）
 
+## [0.10.12] - 2026-11-28
+
+### 新增
+
+- `status` 输出新增 `accountId`（本次实际使用的账号；未认证、使用 `MOLIAI_TOKEN` 或账号匹配失败时为 `null`，且不影响退出码），
+  便于并行会话核对自己用的是哪个账号
+- `account list --account <值>` 匹配不到时新增 warning 并列出可用账号（此前静默返回 `activeAccount: null`）
+
+### 修复
+
+- `task list --canvas` 的 help 文案改为如实说明：单独使用时后端不做过滤，需与 `--client-request-id` 配合
+
+注意：`status` 的 `data` 多了一个 `accountId` 键。若脚本对 `data` 做严格键集比对（如断言 keys 完全相等），需要容忍该字段；按字段读取的脚本不受影响。
+
 ## [0.10.11] - 2026-11-28
 
 ### 新增

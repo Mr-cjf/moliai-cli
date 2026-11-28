@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.11）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.12）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://dance.aidancevid.com/api
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install-boot
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.11`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.12`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.11/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -407,8 +407,27 @@ MOLIAI_ACCOUNT=cjf moliai task list
 - **匹配不到就报错**（`MOLIAI_ARG_INVALID`，`details.available` 列出该环境可用的账号），**不会悄悄退回默认账号**——
   `MOLIAI_ACCOUNT=typo` 停在报错上，好过静默用另一个账号扣费
 - 续期（API KEY 换 token）与作业目录归属都跟随同一个「选中的账号」，不会出现「续期 A、请求 B」
-- `whoami` 的 `accountId` / `account list` 的 `activeAccount` 会告诉你本次实际用的是哪个本地账号
+- `whoami` 的 `accountId` / `account list` 的 `activeAccount` / `status` 的 `accountId` 会告诉你本次实际用的是哪个本地账号
 - 与 `MOLIAI_TOKEN` 同时设置会直接报错（直接给的令牌无法对应本地账号，不能让账号指定被静默忽略）
+
+#### `account list --account <写错的值>`：只 warning，不失败
+
+`account list` 是**诊断命令**，与 `account use` / `account remove` 这类**执行命令**的失败口径刻意不同：
+
+| 命令 | 账号匹配不到时 |
+|---|---|
+| `account list` | `ok: true`、`activeAccount: null`，**多一条 warning** 列出可用账号（退出码 0） |
+| `account use` / `account remove` / 其它业务命令 | 直接报 `MOLIAI_ARG_INVALID`，`details.available` 列出可用账号（**不退回默认账号**） |
+
+`account list` 的 warning 文本形如：
+
+```
+没有匹配「<值>」的账号；本次没有选中任何账号（activeAccount 为 null）。可用账号：<accountId>（<昵称>）、…（完整信息见 accounts）
+```
+
+- `--output text` 也会打印这条（形如 `warning: 没有匹配「<值>」的账号；…`）
+- **命令本身的参数没有变化**（仍是 `account list`，覆盖值来自全局 `--account` / `MOLIAI_ACCOUNT`）
+- 理由：诊断命令不该因为参数写错就看不见列表；执行命令则必须显式失败，否则会静默按另一个账号扣费
 
 ### 凭据文件的并发写入
 
@@ -496,7 +515,7 @@ moliai doctor        # ffmpeg 项应为 pass
 > `moliai project create "<项目名>"` 创建（CLI 只支持 `canvas`/无限画布模式，会顺带建一张同名画布，见「命令清单 → 项目」）。
 
 ```bash
-moliai status                 # 看配置目录、版本、登录状态、后端连通性
+moliai status                 # 看配置目录、版本、登录状态（含本次账号 accountId）、后端连通性
 moliai project list           # 列出你的项目，拿到 projectId（没有项目就先 project create）
 moliai canvas list -w <projectId>   # 列出该项目下的画布
 moliai canvas use <canvasId>  # 把画布绑定到当前目录（之后命令可省略画布参数）
@@ -548,11 +567,11 @@ moliai model list --type video      # 看你的账号能用哪些模型
 | `env` | 列出已登录的环境、默认环境与本次实际环境 | `moliai env` |
 | `env use <url>` | 把某环境设为默认（不用重新登录） | `moliai env use "https://dance.aidancevid.com/api"` |
 | `env remove <url>` | 删除某环境的凭据（含该环境全部账号；输出删除的账号数，多账号环境需 `--yes`） | `moliai env remove "https://dance.aidancevid.com/api"` |
-| `account list` | 列出当前环境的账号（默认账号单独标出，`activeAccount` 为本次实际使用的账号；不显示 token / KEY） | `moliai account list` |
+| `account list` | 列出当前环境的账号（默认账号单独标出，`activeAccount` 为本次实际使用的账号；不显示 token / KEY）。传 `--account` 匹配不到时仍返回 `ok: true`，只多一条 warning 列出可用账号（见「单次调用指定账号」） | `moliai account list` |
 | `account use <标识>` | 切换当前环境的默认账号（标识可为 userId / 昵称 / 账号 id；昵称重复时用 userId） | `moliai account use cjf` |
 | `account remove <标识>` | 删除账号（需 `--yes`；不能删最后一个账号） | `moliai account remove cjf --yes` |
 | `whoami` | 打印当前身份、令牌过期时间与**真实余额**（`balance`） | `moliai whoami` |
-| `status` | 打印宿主、配置目录、版本、后端连通性（`connectivity.error` 是含 `code` / `message` / `hint` / `details` 的对象） | `moliai status` |
+| `status` | 打印宿主、配置目录、版本、本次实际使用的账号（`accountId`）、后端连通性（`connectivity.error` 是含 `code` / `message` / `hint` / `details` 的对象） | `moliai status` |
 
 `status` 的 `connectivity`：
 
@@ -574,6 +593,20 @@ moliai model list --type video      # 看你的账号能用哪些模型
 - `details` 里是该错误的全部诊断信息（如上面账号名写错时的可用账号列表，只含 accountId / 昵称，**不含 token / KEY**），
   不必再跑一次 `account list` / `whoami` 才能定位
 - 未登录时 `error.code` 为 `MOLIAI_AUTH_REQUIRED`（没有可用凭据，已跳过探测）
+
+`status` 的 `data.accountId`（**恒存在**，类型 `string | null`）——本次实际使用的本地账号 id：
+
+| 情况 | `accountId` |
+|---|---|
+| 已登录且能解析到本地账号 | 该账号的 accountId |
+| 未认证（没有可用凭据） | `null` |
+| 令牌来自 `MOLIAI_TOKEN`（没有对应的本地账号记录） | `null` |
+| 账号匹配失败（如 `MOLIAI_ACCOUNT=typo`） | `null` |
+
+- **账号匹配失败不改变 `status` 的退出码**（仍是 0）：`status` 是诊断命令，真实错误照常写在 `connectivity.error` 里
+  （`code` / `hint` / `details.available`），`accountId` 只是如实给 `null`，不会据此新增报错
+- `--output text` 会在 `authenticated` 之后多一行 `accountId: <值>`（值为 `null` 时打印 `accountId: null`）
+- 用途：多个会话并行、各自用 `--account` / `MOLIAI_ACCOUNT` 时，用它可以核对「这个会话实际用的是哪个账号」
 
 ### 安装与自检
 
@@ -1834,7 +1867,7 @@ moliai storyboard stitch "第一幕分镜" -o ./第一幕.png --keep-inputs ./�
 
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
-| `task list` | 列出任务（`--limit` 每页条数 / `--page` 页码 / `--ids` / `--canvas` / `--client-request-id` / `--status`）；信封额外带 `summary`（当前页 `byStatus` / `byType` 分布） | `moliai task list --canvas <canvasId> --limit 10` |
+| `task list` | 列出任务（`--limit` 每页条数 / `--page` 页码 / `--ids` / `--client-request-id` / `--status`；`--canvas` 需与 `--client-request-id` 配合定位，**单独使用时后端不做过滤**）；信封额外带 `summary`（当前页 `byStatus` / `byType` 分布） | `moliai task list --limit 10 --page 1` |
 | `task get` | 查单个任务（`--events` 附带事件流；`--with-result` 输出完整 `result`，默认只给 `resultSummary` 摘要：字段名、类型与字节数） | `moliai task get <taskId> --with-result` |
 | `task watch` | 实时观察任务：状态或进度变化时打印一行，终态退出（`--interval` / `--until`） | `moliai task watch <taskId> --output text` |
 | `task cancel` | 取消任务（执行需 `--yes`；`--dry-run` 仅预演，不需要 `--yes`；只有 `queued` / `processing` 会被真正取消）；`--where '<选择器>'` 批量取消 | `moliai task cancel <taskId> --yes` |
@@ -1879,6 +1912,9 @@ moliai task watch <taskId> --interval 1 --output ndjson  # 每行一个事件对
 - `--client-request-id` 可**单独使用**（后端走 `(userId, clientRequestId)` 组合索引找回任务），不需要 `--canvas`；
   同时给 `--canvas` 时按该画布内的幂等键（`canvas:{userId}:{canvasId}:{clientRequestId}`，含音频任务的 `:nodeId` 变体）定位，语义不同。
   未命中时后端返回 404（不区分「不存在」与「不属于当前账号」），CLI 报 `MOLIAI_NOT_FOUND`（退出码 2）并列出全部可能原因，**不会自动改用别的查询方式**。
+- ⚠️ **`--canvas` 单独使用时不过滤**：后端只在 `clientRequestId` 存在时才使用 `canvasId`（拼进上面那个幂等键做找回），
+  所以 `moliai task list --canvas <canvasId>` 返回的仍是账号下的全部任务。**它不是「按画布筛选任务」的参数**——
+  想只拿到某个画布的任务，用 `--client-request-id` 按幂等键精确找回，或自行在输出里过滤。
 
 #### `task cancel` 的行为（与后端实现对齐）
 

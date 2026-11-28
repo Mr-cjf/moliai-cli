@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.10.13"
+  version: "0.10.14"
 ---
 
 # MoliAi CLI Skill
@@ -87,7 +87,7 @@ metadata:
 |---|---|
 | 当前环境 / 已登录环境 | `moliai env` |
 | 身份/连通性 | `moliai whoami`（`data.balance` 是真实余额，`quota` 只是本地占位） |
-| 项目 → 画布 | `moliai project list` → `moliai canvas list -w <projectId>`；没有项目时 `moliai project create "<名称>"`（**CLI 只支持 `canvas`/无限画布模式**，顺带建一张同名画布；传统模式 `novel-promotion` 项目没有画布、CLI 无法操作，会直接报错，请到网页端创建；不自动写目录绑定，按输出 `next` 继续）。`project list` 分页：`--limit` 每页 1..200（默认 20）、`--page` **从 1 开始**；信封带 `page`（1 起，回显实际传入页码）/ `count` / `total` / `hasMore`，**`hasMore=true` 就是还有下一页**，别把默认 20 条当成全部项目 |
+| 项目 → 画布 | `moliai project list` → `moliai canvas list -w <projectId>`（等价写法 `--project <projectId>`）；没有项目时 `moliai project create "<名称>"`（**CLI 只支持 `canvas`/无限画布模式**，顺带建一张同名画布；传统模式 `novel-promotion` 项目没有画布、CLI 无法操作，会直接报错，请到网页端创建；不自动写目录绑定，按输出 `next` 继续）。`project list` 分页：`--limit` 每页 1..200（默认 20）、`--page` **从 1 开始**；信封带 `page`（1 起，回显实际传入页码）/ `count` / `total` / `hasMore`，**`hasMore=true` 就是还有下一页**，别把默认 20 条当成全部项目 |
 | 绑定画布到当前目录 | `moliai canvas use <canvasId>` |
 | 看画布与节点 | `moliai canvas show` / `moliai node list --limit 200` |
 | 画布体检（只读，零扣费） | `moliai diagnose` → 先看 `data.source`（`server` = 后端 Doctor 报告，`local` = 后端无该路由时的本地降级）；再按 `empty` / `failed` / `rerunnable` 查看问题，`--out report.json` 落盘 |
@@ -98,7 +98,7 @@ metadata:
 | 复制节点 | `moliai node duplicate <nodeId...> --offset-x 40 --offset-y 40 --dry-run` → 去掉 `--dry-run`（**偏移必填**；媒体不复制只引用；不支持的类型报 `MOLIAI_UNSUPPORTED`） |
 | 加入资产中心 | `moliai node add-to-assets <nodeId...> --folder <folderId>`（voice/audio 必填 `--folder`；image/video 可不传=未归档；**旧链路无幂等，重复执行会重复建资产**；有失败组退出码 6） |
 | 查资产夹（拿 folderId） | `moliai folder list`（默认缩进成树；`--flat` 平铺、`--show-deleted` 含已删除）；输出 5 字段 `id`/`name`/`parentId`/`depth`/`sortOrder` |
-| 连线 | `moliai connection create <源> <目标>` / `moliai connection list` |
+| 连线 | `moliai connection create <源> <目标>` / `moliai connection list` / 批量删 `moliai connection delete --ids a,b --canvas <canvasId> --yes`（画布必须用 `--canvas`） |
 | 编组 | `moliai group create <节点...> --name "名"` / `moliai group list` / `moliai group merge <g1> <g2> --yes` |
 | 声明式搭建（默认零扣费） | `moliai apply -f plan.json --dry-run --diff` → 确认后 `moliai apply -f plan.json`；加 `--run` 建完即生成（⚠️ 扣费），加 `--prune --yes` 清理组内计划外节点（⚠️ 删除） |
 | 分镜组（读/建/改/清/成员） | `moliai storyboard list` / `show "<组名>"` / `create --from-nodes <节点...> --dry-run` / `config "<组名>" --rows 2 --columns 3 --dry-run` / `add-node "<组名>" "<节点>" --slot 1` / `move "<组名>" "<节点>" --from 0 --to 2` / `duplicate "<组名>" --offset-x 200 --offset-y 200 --yes` / `stitch-inputs "<组名>"` / `dissolve "<组名>" --yes` |
@@ -106,8 +106,8 @@ metadata:
 | 整组批量执行 | `moliai group run "<组名>"`（预览）→ `moliai group run "<组名>" --execute`（真跑） |
 | 派生场景清单 | `moliai derive list` |
 | 深度动作捕捉（建节点，零扣费） | `moliai derive depth-capture <video节点> --resolution 480p --dry-run` |
-| 视频续写（建占位节点，零扣费） | `moliai derive video-continuation <video节点> --model <k> --from 0 --to 4 --dry-run` |
-| 视频续写生成（本地裁切+上传，扣费，需本机 ffmpeg） | `moliai derive video-continuation <video节点> --model <k> --from 0 --to 4 --duration 5 --resolution 720p --run --max-cost <n>`（`--duration` 是输出秒数=计费秒数，与选段长度无关） |
+| 视频续写（建占位节点，零扣费） | `moliai derive video-continuation <video节点> --model <k> --from 0 --to 4 --prompt "继续推向窗外" --dry-run`（`--prompt` 可省略＝提交空串，模型自行接续） |
+| 视频续写生成（本地裁切+上传，扣费，需本机 ffmpeg） | `moliai derive video-continuation <video节点> --model <k> --from 0 --to 4 --duration 5 --resolution 720p --prompt "继续推向窗外" --run --max-cost <n>`（`--duration` 是输出秒数=计费秒数，与选段长度无关） |
 | 预设图派生（零扣费建节点+连线） | `moliai derive panorama <image节点> --model tencent::gpt-image-2` / `moliai derive three-view <image节点>` / `moliai derive nine-grid <image节点>` / `moliai derive portrait-texture <image节点>` |
 | 超分（零扣费建节点+连线） | 图片：`moliai derive super-resolution <image节点> --size 1080p --dry-run --run`；视频：`moliai derive super-resolution <video节点> --resolution 1080P --dry-run --run`（视频按秒计费，只报价不跑） |
 | 涂鸦重绘（零扣费建节点+连线） | `moliai derive image-edit <image节点> --doodle ./doodle.png --model <k> --dry-run --run`（`--doodle` 是「源图+涂鸦」完整整图，不是 mask） |
@@ -116,7 +116,7 @@ metadata:
 | 音频截取/变速（零扣费，需本机 ffmpeg） | `moliai derive audio-process <audio节点> --trim-start 0.5 --trim-end 3.7` / `--speed 1.5`（变速保调；输出 PCM wav） |
 | 网格切图（零扣费，需本机 ffmpeg） | `moliai derive from-grid <image节点> --rows 2 --columns 2`（切成 N 张 → 建 N 个 image 节点 + N 条 manual 连线；源图格子有间隔时加 `--gap <px>`） |
 | 上传素材 | `moliai upload <file> <canvasId>` → `storageKey` / `mediaId` |
-| 预演生成（零成本） | `moliai run <node> --dry-run --model <k> --prompt "<p>" --set k=v` |
+| 预演生成（零成本） | `moliai run <node> --dry-run --model <k> --prompt "<p>" --set k=v`（画布可写第 2 位位置参数，或用 `--canvas <canvasId>`） |
 | 查参数来源（零成本） | 加 `--explain`：`moliai run <node> --model <k> --explain`（自动走 dry-run，输出每个参数为什么是这个值） |
 | 真实提交（扣费） | `moliai run <node> --model <k> --prompt "<p>" --set k=v --wait 60`（可加 `--max-cost <n>` 设上限） |
 | 长任务接续 | `moliai wait <jobId> --max 60` / `moliai jobs --active` |
@@ -217,7 +217,9 @@ moliai run --where 'type=image' --max-nodes 1 --explain   # 批量：每个 node
 1. 先预览：`moliai run --where 'type=image&hasResult=false'`，读 `matched` / `matchedBeforeLimit` /
    `nodes[].estimatedCost` / `nodes[].skipReason` / `totalEstimatedCost` / `estimatedSubmitMinutes` / `blockers`。
 2. 用户确认后加 `--execute`。命中数超过 `--max-nodes`（默认 20）需 `--yes`，否则退出码 10。
-3. 位置参数是**画布 id**（`moliai run --where '...' <canvasId>`）；同时给节点会报 `MOLIAI_ARG_INVALID`。
+3. 画布写第 1 位位置参数（`moliai run --where '...' <canvasId>`）或用 `--canvas <canvasId>`（两者等价；
+   同时给且不一致 → `MOLIAI_ARG_INVALID`）。单节点模式的画布是**第 2 位**，同样支持 `--canvas`。
+   同时给节点会报 `MOLIAI_ARG_INVALID`。
    批量模式不支持 `--ref-*` / `--client-request-id`（会显式报错，不会静默忽略）。
 4. 命中 0 个 → `MOLIAI_ARG_INVALID`「没有匹配的节点」（不静默成功）。
    `status=generating` 与不支持生成的节点类型进 `skipped`；缺模型/提示词/参数非法进 `blockers`，
@@ -240,6 +242,8 @@ moliai run --where 'type=image' --max-nodes 1 --explain   # 批量：每个 node
    - 深度捕捉源：`video` / `super_resolution(video)` / `depth_capture`，且 `mediaUrl` 非空；
    - 续写源必须是 `video`，有 `mediaUrl` 与 `duration`；**源全长与选段都要 4–30 秒**，
      选段 `0 <= start < end <= 源时长`；`--from/--to`（秒）与 `--from-ms/--to-ms` 二选一。
+   - 续写 `--prompt` **可省略**（省略＝提交空串，模型自行接续）；显式 `--prompt ""` 报 `MOLIAI_ARG_INVALID`；
+     CLI 不插 `<mention>`（原样透传，后端编译成 `@视频N`，定位不到会 400）。
 5. 续写产出是 `mediaUrl` 为空的占位 `video` 节点，必须再生成才有产物；
    生成请用 `--run` 或对新建节点单独 `moliai run`（后者同样扣费，先 `--dry-run`）。
 6. 视频续写创建前 CLI 会先 `reference-media/prepare` 取 `sourceExpectations`（后端强制要求），
@@ -340,7 +344,8 @@ moliai run --where 'type=image' --max-nodes 1 --explain   # 批量：每个 node
 5. `node delete` 三个入口**互斥**：`<nodeId>` / `--where` / `--ids`；**批量删除用 `--canvas <canvasId>` 指定画布**，
    不要用位置参数（位置上写画布会被当成 `nodeId`，报「三种目标方式只能选一种」）。画布优先级：
    `--canvas` > 位置参数 `canvasId` > `MOLIAI_CANVAS` > `moliai canvas use` 绑定；两处同时给且不一致 → `MOLIAI_ARG_INVALID`。
-   `node update --where` 同理（批量改参数用 `--canvas`）。
+   `node update --where` 同理（批量改参数用 `--canvas`）；`connection delete --ids a,b` 同理
+   （批量删连线用 `--canvas <canvasId>`，画布写在位置上会被当成 `connectionId`）。
 6. 命中数 > `--max-nodes`（缺省 20）且没有 `--yes` → `MOLIAI_CONFIRM_REQUIRED`（退出码 10，
    `details.candidateNodes` 列出前 N 个）；表达式语法/未知字段/非法 `hasResult` → `MOLIAI_SELECTOR_INVALID`（退出码 2）。
 7. **先 `--dry-run` 看命中，再带 `--yes` 真删**。`--where` 命中 0 个会报 `MOLIAI_ARG_INVALID`（破坏性操作不静默成功）；
@@ -629,6 +634,19 @@ moliai apply -f plan.json --prune --yes           # 搭建 + 清理（删除，2
   - 普通编组的写操作对分镜组仍会被本地拒绝（`MOLIAI_UNSUPPORTED`），只有 `group update` 改名称/颜色可用。
 - `group update` / `connection update` 支持 `--dry-run --diff`：本地算前后对照、零写入、零请求（除一次画布详情 GET），
   输出 `{ mode: "dry-run", ...ids, diff: { before, after, changes } }`；改名称/颜色/编组框/连线样式前先看 `changes`。
+
+## 易错点
+
+1. **续写要控制剧情就必须加 `--prompt`**：`moliai derive video-continuation` 省略 `--prompt` 时提交**空串**，
+   模型自行接续——用户说「接着往下拍，人物要转身」这类需求，不传就实现不了。省略且 `--run` 只给 warning，
+   不报错，很容易以为是模型没理解。反过来显式 `--prompt ""` 会报 `MOLIAI_ARG_INVALID`：要省略就整个不传。
+2. **批量删连线用 `--ids ... --canvas <id>`，不要把画布写在位置上**：
+   `moliai connection delete --ids a,b <canvasId> --yes` 会把画布当成 `connectionId`，报「目标方式只能选一种」。
+   正确写法 `moliai connection delete --ids a,b --canvas <canvasId> --yes`。同一原因适用于所有变参命令
+   （`node delete --ids` / `node duplicate <id...>` / `group create <节点...>` / `group merge <组...>` 等），
+   画布一律用 `--canvas`；固定参数命令（`node list <canvasId>`）的位置参数写法照旧可用。
+3. **`--prompt` 里不要手写 `<mention>`**：CLI 不自动插入也不展开，原样透传给后端；后端会把 `<mention>`
+   编译成 `@视频N` 引用，定位不到直接 400。需要引用画布素材时写描述性文字，不要手拼 `<mention>` 标签。
 
 ## 任务取消（`task cancel`）
 

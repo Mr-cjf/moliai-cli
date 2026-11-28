@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.13）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.14）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://dance.aidancevid.com/api
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install-boot
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.13`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.14`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.14/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -781,11 +781,33 @@ moliai diagnose [canvasId] [--out report.json]
 
 | 命令 | 说明 | 最小示例 |
 |---|---|---|
-| `canvas list` | 列出项目下的画布（`-w <projectId>`，省略时用目录绑定） | `moliai canvas list -w <projectId>` |
+| `canvas list` | 列出项目下的画布（项目用 `-w <projectId>` 或 `--project <projectId>`，两者等价；都省略时用目录绑定） | `moliai canvas list -w <projectId>` · `moliai canvas list --project <projectId>` |
 | `canvas show` | 画布详情 + 精简节点列表 | `moliai canvas show <canvasId>` |
-| `canvas create` | 新建画布（不自动切换当前绑定） | `moliai canvas create "第一集分镜" -w <projectId>` |
+| `canvas create` | 新建画布（不自动切换当前绑定）；项目同样支持 `-w` 与 `--project` | `moliai canvas create "第一集分镜" -w <projectId>` |
 | `canvas use` | 校验画布存在并绑定到当前目录 | `moliai canvas use <canvasId>` |
 | `canvas unuse` | 解除当前目录绑定 | `moliai canvas unuse` |
+
+`-w, --workspace` 与 `--project` **等价**（都表示 projectId），都仍然可用；同时给且值不一致 →
+`MOLIAI_ARG_INVALID`，不会静默取其中一个。
+
+#### 画布 / 项目参数怎么传
+
+规则按**参数形状**分两类，不按命令习惯分——原因是 commander 会把末尾位置参数收进变参列表：
+
+| 命令形状 | 画布怎么传 | 例子 |
+|---|---|---|
+| 固定参数命令（参数个数确定） | 位置参数 | `moliai node list <canvasId>`、`moliai node delete <nodeId> <canvasId>`、`moliai connection list <canvasId>` |
+| 变参命令（末尾是 `<节点...>` / `<连线...>` 列表） | **必须用 `--canvas <canvasId>`** | `moliai node duplicate <id...> --canvas <canvasId>`、`moliai node delete --ids a,b --canvas <canvasId>`、`moliai connection delete --ids a,b --canvas <canvasId>`、`moliai group create <节点...> --canvas <canvasId>` |
+
+- **变参命令为什么必须用 `--canvas`**：末尾位置参数会被吞成 `nodeId` / `connectionId` 列表里的一项，
+  把画布写在位置上会报「目标方式只能选一种」之类的冲突错误，而不是被当成画布。同一原因，
+  `run --where '<表达式>'` 的批量模式也提供了 `--canvas`（位置参数虽仍是画布，但用选项更不容易错）。
+- **两种写法同时给且不一致 → 报错**（`MOLIAI_ARG_INVALID`），不会静默取其中一个；取值相同按同一画布处理。
+- **画布优先级**：`--canvas` > 位置参数 `canvasId` > `MOLIAI_CANVAS` > `moliai canvas use` 目录绑定。
+- **项目 id**：只有 `canvas list` / `canvas create` 需要项目，用 `-w, --workspace <projectId>` 或
+  `--project <projectId>`（等价，同时给且不一致报 `MOLIAI_ARG_INVALID`）；其余命令的项目从目录绑定取。
+
+> 两种位置参数写法全部保留，老脚本不用改；变参命令只是**新增**了 `--canvas` 入口。
 
 ### 作品发布
 
@@ -1170,7 +1192,7 @@ moliai node add-to-assets <nodeId> --folder <folderId> --dry-run
 | `connection create` | 建手工连线（起点/终点支持 nodeId 或节点名；同 source+target 幂等） | `moliai connection create "上游" "下游" --label "节奏"` |
 | `connection list` | 列出连线（`--source` / `--target` / `--type manual\|derivation`） | `moliai connection list --source "上游"` |
 | `connection update` | 改连线样式（`--label` / `--style` / `--color` / `--arrow` / `--no-arrow`）；`--dry-run --diff` 可先看前后对照 | `moliai connection update <connId> --color "#ff0000"` |
-| `connection delete` | 删单条（`--yes`）或批量（`--ids`，幂等 + 24h 可恢复） | `moliai connection delete --ids id1,id2 --yes` |
+| `connection delete` | 删单条（`--yes`）或批量（`--ids`，幂等 + 24h 可恢复）；批量用 `--canvas <canvasId>` 指定画布 | `moliai connection delete --ids id1,id2 --canvas <canvasId> --yes` |
 | `connection restore` | 恢复批量删除的连线（24 小时内） | `moliai connection restore <deletionOperationId>` |
 
 后端不拦的规则由 CLI 兜住：自环、节点 `uploading`/`generating`、类型矩阵、voice 入线、
@@ -1211,6 +1233,14 @@ moliai node add-to-assets <nodeId> --folder <folderId> --dry-run
   `X-Deletion-Operation-Id`，因此**没有恢复入口**（输出 `deletionOperationId: null` 并附警告）。
 - 批量 `POST /connection-deletions` **幂等**（`clientRequestId` 必填，省略时 CLI 生成 UUID v4），
   返回 `deletionOperationId`，24 小时内可用 `connection restore` 恢复，超期 410。
+
+**画布怎么传**：`--canvas <canvasId>` > 位置参数 `[canvasId]` > `MOLIAI_CANVAS` > 目录绑定；
+两个显式来源同时给且不一致 → `MOLIAI_ARG_INVALID`（取值相同不报错）。
+
+> ⚠️ **批量模式（`--ids`）必须用 `--canvas`，不要把画布写在位置上**：
+> `moliai connection delete --ids id1,id2 --canvas <canvasId> --yes`。
+> 批量模式的末尾位置参数会被当成 `connectionId` 列表的一部分（报「目标方式只能选一种」），
+> 不是被当成画布。单条模式的位置参数写法 `moliai connection delete <connId> <canvasId>` 照旧可用。
 
 ### 编组（group）
 
@@ -2143,6 +2173,31 @@ moliai folder list --show-deleted   # 连同已删除的夹一起列出
 | `run` | 在画布节点上提交一次生成任务（**唯一扣费命令**） | `moliai run <nodeId> --dry-run --model <k> --prompt "<p>"` |
 | `extract` | 从 text 节点提取角色/场景/物品，并把结果落成画布节点（`--kind` 必填） | `moliai extract <nodeId> --kind character --wait 120` |
 
+#### `run` 的画布参数：单节点与批量两种模式
+
+`run` 的两种模式都可用 `--canvas <canvasId>` 指定画布，位置参数的含义**不变**：
+
+| 模式 | 位置参数 | 选项写法 | 结果 |
+|---|---|---|---|
+| 单节点 `run <nodeRef>` | `[canvasId]` 是**第 2 位** | `moliai run "镜头-01" --canvas <canvasId>` | 与 `moliai run "镜头-01" <canvasId>` 等价 |
+| 批量 `run --where '<expr>'`（含 `--rerun-failed`） | `[canvasId]` 是**第 1 位** | `moliai run --where '...' --canvas <canvasId>` | 与 `moliai run --where '...' <canvasId>` 等价 |
+
+冲突规则（两种模式相同）：
+
+- 位置参数与 `--canvas` 同时给且**不一致** → `MOLIAI_ARG_INVALID`，不会静默取其中一个；取值相同按同一画布处理。
+- 两者都省略 → `MOLIAI_CANVAS` > 目录绑定。
+- 批量模式下 `--canvas` 是首选写法：第 1 位位置参数只在这一种命令里是画布，容易与单节点写法记混。
+
+```bash
+# 单节点：两种写法等价
+moliai run "镜头-01" <canvasId> --dry-run
+moliai run "镜头-01" --canvas <canvasId> --dry-run
+
+# 批量：两种写法等价
+moliai run --where 'name~镜头-' <canvasId>
+moliai run --where 'name~镜头-' --canvas <canvasId>
+```
+
 #### `run --explain`：看清每个参数从哪来（零写入）
 
 `--explain` 在 `--dry-run` 的基础上，额外输出**将发出的请求体（已脱敏）**与**每个参数的来源**，
@@ -2282,8 +2337,9 @@ moliai run --where 'name~测试' --execute \
 | `--wait` / `--deadline` / `--model` / `--prompt` / `--set` / `--count` / `--max-cost` | 同 `run` | 对所有命中节点生效 |
 | `--dry-run` | 布尔 | 强制预览（与默认等价，保留兼容） |
 
-**批量模式的位置参数是画布 id**：`moliai run --where '...' <canvasId>`。同时给节点和画布
-（两个位置参数）会报错——批量模式不接受节点参数。
+**批量模式的位置参数是画布 id**：`moliai run --where '...' <canvasId>`，也可以用选项
+`moliai run --where '...' --canvas <canvasId>`（两者等价，同时给且不一致报 `MOLIAI_ARG_INVALID`）。
+同时给节点和画布（两个位置参数）会报错——批量模式不接受节点参数。
 
 **跳过与阻断**：
 
@@ -2344,7 +2400,7 @@ moliai extract <text节点id> --kind scene --no-apply
 |---|---|---|
 | `derive list` | 列出全部派生场景与 CLI 支持状态（13 项） | `moliai derive list` |
 | `derive depth-capture` | 从 video / 超分视频 / 深度捕捉节点创建 `depth_capture` 节点 | `moliai derive depth-capture <video节点> --dry-run` |
-| `derive video-continuation` | 从 video 节点创建视频续写占位节点（`mediaUrl` 为空）；`--run` 时本地裁切源视频并上传片段走 `frontend_clip` 续写 | `moliai derive video-continuation <video节点> --model <k> --from 0 --to 4 --dry-run` |
+| `derive video-continuation` | 从 video 节点创建视频续写占位节点（`mediaUrl` 为空）；`--run` 时本地裁切源视频并上传片段走 `frontend_clip` 续写。`--prompt` 描述下一段剧情/动作，**可省略**（省略时提交空串，模型自行接续） | `moliai derive video-continuation <video节点> --model <k> --from 0 --to 4 --prompt "继续推向窗外" --dry-run` |
 | `derive panorama` | 从图片节点派生 720° 全景图节点（`taskType=panorama_image`） | `moliai derive panorama <image节点> --model tencent::gpt-image-2` |
 | `derive three-view` | 从图片节点派生角色三视图节点（`layoutPreset=画面版式:三视图`） | `moliai derive three-view <image节点>` |
 | `derive nine-grid` | 从图片节点派生多机位九宫格节点（`anglePreset=机位视角:九宫格`） | `moliai derive nine-grid <image节点>` |
@@ -2367,13 +2423,17 @@ moliai derive depth-capture <video节点> --resolution 480p
 # 视频续写：--from/--to 用秒（支持小数），内部转毫秒；也可用 --from-ms/--to-ms
 moliai derive video-continuation <video节点> \
   --model wetoken::bytedance-seedance-2-5-260628 --from 0 --to 4 --dry-run
+# --prompt 描述下一段剧情/动作/情绪；可省略，省略时提交空串（模型自行接续）
+moliai derive video-continuation <video节点> \
+  --model wetoken::bytedance-seedance-2-5-260628 --from 0 --to 4 \
+  --prompt "镜头继续推进，人物转身走向窗边" --dry-run
 moliai derive video-continuation <video节点> \
   --model wetoken::bytedance-seedance-2-5-260628 --from 0 --to 4
 # --run 走 frontend_clip：本地裁切 [--from,--to) → 上传片段 → 提交续写生成
 # --duration 是「续写输出秒数」（4–30 整数，= 计费秒数），不是选段长度
 moliai derive video-continuation <video节点> \
   --model wetoken::bytedance-seedance-2-0-260128 \
-  --from 0 --to 4 --duration 5 --resolution 720p --run --max-cost 100
+  --from 0 --to 4 --duration 5 --resolution 720p --prompt "继续推向窗外" --run --max-cost 100
 # 想检查裁切结果/更快？--keep-clip 保留 mp4；--fast 用 -c copy（不重编码，端点会吸附包边界）
 moliai derive video-continuation <video节点> \
   --model wetoken::bytedance-seedance-2-0-260128 \
@@ -2399,6 +2459,15 @@ moliai derive video-continuation <video节点> \
   `POST /canvases/{id}/generate` 带齐 `options.duration` / `options.resolution` / `sourceExpectations` /
   `videoContinuation{inputMode, clipMediaId, clipDurationMs, extensionDurationSeconds}`。
   因此 **`--run` 必须有系统 ffmpeg**（`--dry-run` 不做下载与裁切，不需要）。
+- **`--prompt <text>` 是续写提示词，可省略**，描述下一段剧情 / 动作 / 情绪：
+  - **省略时提交空串**（模型自行接续）；`--dry-run` 输出里会带上 `prompt`，`--explain` 的 `request` 与
+    `parameterSources` 也含 `prompt`（来源为显式或 CLI 缺省空串）。
+  - **显式空串 `--prompt ""` 直接报错** `MOLIAI_ARG_INVALID`（与 `derive video-edit` 一致）：
+    要「省略」就整个不传，空串不表示「没给」。
+  - 省略且**真正提交生成**（`--run`）时给 warning：「未提供 --prompt：续写将由模型自行接续，无法指定剧情/动作。
+    需要控制内容时加 `--prompt "<描述>"`」——不是报错，但续写内容不可控。
+  - **CLI 不自动插 `<mention>`**：`--prompt` 原样透传给后端；后端会把 `<mention>` 编译成 `@视频N` 引用，
+    定位不到会返回 400。所以不要在 `--prompt` 里手写 `<mention>`，也不指望 CLI 替你把节点名转成引用。
 - **`--duration <秒>`** 是续写**输出**秒数（4–30 整数，= `options.duration` = `extensionDurationSeconds`，
   也是**计费秒数**）；与选段长度 `--to - --from` 无耦合。`--run` 时必填。
 - **`--resolution`** 默认 `720p`（只接受 `480p` / `720p`），直接决定每秒单价。

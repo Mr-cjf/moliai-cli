@@ -6,6 +6,26 @@
 
 （无）
 
+## [0.10.13] - 2026-11-28
+
+### 新增
+
+- `node show`：输出节点完整原始字段（含 content / modelParams / voiceState 等），可选 `--connections`
+- `node duplicate`：按画布真实 id 复制节点（支持多节点与 `--where`、四种连线模式、`--dry-run`）
+- `node add-to-assets`：把节点添加到资产中心（voice/audio 走新链路含幂等与轮询，image/video 走旧链路）
+- `folder list`：列出资产夹（返回 id / 名称 / 层级），用于 `node add-to-assets --folder`
+- `node delete` / `node update` 新增 `--canvas <canvasId>`：画布优先级 `--canvas` > 位置参数
+  `canvasId` > `MOLIAI_CANVAS` > 当前目录绑定；两个显式来源不一致时显式报 `MOLIAI_ARG_INVALID`。
+  批量模式（`--where` / `--ids`）用 `--canvas` 指定画布，位置参数在批量模式下会被当成 `nodeId`
+
+### 修复
+
+- 422 业务错误码（如 `VOICE_EXPORT_UNSUPPORTED`）此前显示为「内部错误」，
+  现在按 serverCode 给出中文说明（状态码映射与退出码不变）
+- 后端：`video_synthesis` 节点复制丢媒体与时间轴（4 条复制路径补齐 synthesis）
+- `folder list` 的懒创建提示改为条件式措辞（「仅在没有任何资产夹时才会创建…；本次只做查询」），
+  避免无条件陈述句被读成「刚才创建了默认资产」
+
 ## [0.10.12] - 2026-11-28
 
 ### 新增

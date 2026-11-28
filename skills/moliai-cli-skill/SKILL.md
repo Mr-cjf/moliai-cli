@@ -2,7 +2,7 @@
 name: moliai-cli-skill
 description: 通过 moliai CLI 调用 MoliAi 能力：命令速查、成本安全规则（run 前必须先 --dry-run 看 estimatedCost）、写操作预演前后对照（--dry-run --diff）、参数校验与 400 可选值处理、破坏性操作确认、批量任务汇总通知、长任务轮询与错误信封解析。
 metadata:
-  version: "0.10.12"
+  version: "0.10.13"
 ---
 
 # MoliAi CLI Skill
@@ -94,6 +94,10 @@ metadata:
 | 按条件筛节点 | `moliai node list --status completed --has-result` / `--group "<组名>"` / `--sort y --limit 20` |
 | 查模型契约与能力 | `moliai model list` / `moliai model search <kw>` / `moliai model <modelKey>` / `moliai capabilities [--model <modelKey>]` |
 | 建节点 | `moliai node create "<名>" -t image --x 0 --y 0`（`-t super_resolution` 必须加 `--super-resolution-type image\|video`） |
+| 看节点完整字段 | `moliai node show <nodeId> [--connections]`（零裁剪；`node list` 是 12 字段精简视图，`content` / `modelParams` / `voiceState` 只在 `node show` 里有） |
+| 复制节点 | `moliai node duplicate <nodeId...> --offset-x 40 --offset-y 40 --dry-run` → 去掉 `--dry-run`（**偏移必填**；媒体不复制只引用；不支持的类型报 `MOLIAI_UNSUPPORTED`） |
+| 加入资产中心 | `moliai node add-to-assets <nodeId...> --folder <folderId>`（voice/audio 必填 `--folder`；image/video 可不传=未归档；**旧链路无幂等，重复执行会重复建资产**；有失败组退出码 6） |
+| 查资产夹（拿 folderId） | `moliai folder list`（默认缩进成树；`--flat` 平铺、`--show-deleted` 含已删除）；输出 5 字段 `id`/`name`/`parentId`/`depth`/`sortOrder` |
 | 连线 | `moliai connection create <源> <目标>` / `moliai connection list` |
 | 编组 | `moliai group create <节点...> --name "名"` / `moliai group list` / `moliai group merge <g1> <g2> --yes` |
 | 声明式搭建（默认零扣费） | `moliai apply -f plan.json --dry-run --diff` → 确认后 `moliai apply -f plan.json`；加 `--run` 建完即生成（⚠️ 扣费），加 `--prune --yes` 清理组内计划外节点（⚠️ 删除） |
@@ -333,14 +337,52 @@ moliai run --where 'type=image' --max-nodes 1 --explain   # 批量：每个 node
 3. **`group` 是靠 `groups[].memberNodeIds` 反查的**（节点对象上没有组名字段）；不属于任何编组的节点组名为空串，
    不会被 `group=<非空>` 命中。后端返回 `group.name=null` 的默认组无法用 `group=` 选中。
 4. `model` 取 `modelKey`，为空时回退 `generationModel`——所以「按模型筛」筛的是**下一次生成会用的模型**。
-5. `node delete` 三个入口**互斥**：`<nodeId>` / `--where` / `--ids`；批量模式不要给位置参数
-   （画布用 `MOLIAI_CANVAS` 或 `moliai canvas use` 绑定），否则会和 nodeId 冲突。
+5. `node delete` 三个入口**互斥**：`<nodeId>` / `--where` / `--ids`；**批量删除用 `--canvas <canvasId>` 指定画布**，
+   不要用位置参数（位置上写画布会被当成 `nodeId`，报「三种目标方式只能选一种」）。画布优先级：
+   `--canvas` > 位置参数 `canvasId` > `MOLIAI_CANVAS` > `moliai canvas use` 绑定；两处同时给且不一致 → `MOLIAI_ARG_INVALID`。
+   `node update --where` 同理（批量改参数用 `--canvas`）。
 6. 命中数 > `--max-nodes`（缺省 20）且没有 `--yes` → `MOLIAI_CONFIRM_REQUIRED`（退出码 10，
    `details.candidateNodes` 列出前 N 个）；表达式语法/未知字段/非法 `hasResult` → `MOLIAI_SELECTOR_INVALID`（退出码 2）。
 7. **先 `--dry-run` 看命中，再带 `--yes` 真删**。`--where` 命中 0 个会报 `MOLIAI_ARG_INVALID`（破坏性操作不静默成功）；
    `--ids` 里不存在的 id 只进 `warnings` 并跳过。
 8. 输出 `{ dryRun, matched, deleted, deletionOperationId, nodes[], restoreHint }`：**后端一次请求只返回一个
    `deletionOperationId`（无逐节点 opId）**，`nodes[]` 回显 `deletedNodeIds`，恢复按整批执行。
+
+## 复制节点（`node duplicate`）与加入资产中心（`node add-to-assets`）
+
+### 复制（`node duplicate`）
+
+1. **两个偏移都是必填**（`--offset-x` / `--offset-y`，整数可负）。后端 `positionOffset` 无默认值，而「偏移 0」
+   等于副本与原节点完全重叠——看不到变化会被误判成命令失败。不要自己补 0。
+2. 入口三选一：`<nodeId...>` / `--ids a,b` / `--where '<表达式>'`（位置参数与 `--ids` 也互斥）；
+   `--max-nodes` / `--yes` **只在 `--where` 模式有效**（按 id 复制传了会 `MOLIAI_ARG_INVALID`）。
+3. `--connections` 四模式：`none`（默认）/ `internal`（集合内两端）/ `incoming`（internal + 外部→内部）/
+   `all`（再 + 内部→外部）。`all` 的出线强制 `manual`，出线端点若是派生节点会本地报错 → 改用 `incoming`。
+4. **媒体文件不复制**：副本与原节点引用同一份 `mediaUrl` / `mediaId`。不要说「复制了一份视频」。
+5. 副本名由**后端**追加「 - 副本」；派生节点必须把派生源一起复制（否则本地报错）。
+6. 支持 11 种类型（`text` / `image` / `video` / `audio` / `super_resolution` / `panorama_image` /
+   `portrait_texture` / `three_view` / `nine_grid` / `video_synthesis` / `voice`）；`depth_capture` 等报
+   `MOLIAI_UNSUPPORTED`，不要试图绕过。
+7. `nodeIdMap` 是**源 id → 新 id**，后续操作新副本用它；`--dry-run` 是变体形态（多 `wouldCreate`，无 operationId）。
+
+### 加入资产中心（`node add-to-assets`）
+
+1. **分流按节点类型，不是按参数**：`voice` / `audio` → `asset-exports`（新链路）；`image` / `video` /
+   `depth_capture` / `super_resolution(video)` → `quick-add`（旧链路）；其余（`text` / `panorama_image` /
+   `portrait_texture` / `three_view` / `nine_grid` / `video_synthesis` / `super_resolution(image)`）不支持。
+2. **`--folder` 必填性分链路**：含 voice/audio 时**必填**（缺了本地直接 `MOLIAI_ARG_INVALID`）——**先 `moliai folder list` 拿 folderId**，
+   不要猜 id 或复用别的账号的 id；纯 image/video 批次可不传，表示**未归档**——不要一律加 `--folder`，也不要一律省。
+3. `--asset-type` 只对 quick-add 有效，整批单值且必须与节点媒体类型匹配（`character`/`location`/`item` → image 节点，
+   `video` → video 类节点）；不传 = 只落自由创作（不建强类型资产）。voice/audio 由节点类型决定，不接受指定。
+4. `--name` / `--description` / `--client-request-id` **只对 asset-exports（链路 A）有效**，`--name` 还只能单节点；
+   批次含 quick-add 节点时给这些参数会 `MOLIAI_ARG_INVALID`。混批请拆成两次命令。
+5. **部分成功不是成功**：输出 `{ requested, succeeded, failed, notAttempted, groups[] }`，`failed` = 发过写请求但失败，
+   `notAttempted` = 能力探测判定不可导出（如 `MEDIA_NOT_READY`）。**有失败组时退出码是 6（`MOLIAI_TASK_FAILED`）**，
+   但 `ok: true`、结果仍完整输出——汇报时按 `failed` / `groups[].error` 说，不要说「全部成功」。
+6. **旧链路（quick-add）没有幂等键**：同一命令重复执行会**重复创建资产**。不要重试；要补做先 `moliai node list` 核对。
+7. 不支持的类型是**整批拒绝**（`MOLIAI_UNSUPPORTED`，列出 `[{nodeId,nodeType,reason}]`，零写请求），
+   不是「跳过这个、继续其它」。去掉这些节点再执行。
+8. 先 `--dry-run`：链路 A 显示 `capability`（`canExport` / `defaultName` 等），链路 B 显示分组计划，均不发写请求。
 
 ## 预设图派生（`derive panorama` / `three-view` / `nine-grid` / `portrait-texture`）
 

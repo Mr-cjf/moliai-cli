@@ -18,10 +18,10 @@
 1. 判断我的系统（Windows / macOS / Linux）和架构
 2. 执行对应的一键安装命令：
    - macOS / Linux：
-     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh | sh
+     curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.sh | sh
    - Windows PowerShell：
-     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install-boot.ps1 | iex
-3. 验证安装：moliai --version（应为 0.10.12）、moliai doctor（看 healthy 是否为 true）
+     irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install-boot.ps1 | iex
+3. 验证安装：moliai --version（应为 0.10.13）、moliai doctor（看 healthy 是否为 true）
 4. 安装 Agent Skill：moliai setup --agent all，然后 moliai setup --check 确认
 5. 把登录命令原样给我，由我本人执行（不要向我要 API KEY，也不要把它写进任何文件或对话）：
    moliai login key --base-url https://dance.aidancevid.com/api
@@ -44,7 +44,7 @@
 | 情况 | 怎么做 |
 |---|---|
 | 有 AI 编程工具（Claude Code / Codex / DSH） | 复制上面那段话给它 |
-| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install-boot.ps1 \| iex`） |
+| 没有 AI 工具，用命令行 | `curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.sh \| sh`（Windows 用 `irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install-boot.ps1 \| iex`） |
 | 想自己控制 | 从 [Releases](https://github.com/Mr-cjf/moliai-cli/releases) 手动下载 |
 
 ---
@@ -62,13 +62,13 @@
 macOS / Linux：
 
 ```bash
-curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh | sh
+curl -fsSL https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.sh | sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install-boot.ps1 | iex
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install-boot.ps1 | iex
 ```
 
 脚本会：识别平台 → 从 Releases 下载对应二进制 → 校验 SHA256 → 安装到 `~/.local/bin`（Windows 为 `%USERPROFILE%\bin`）→ 处理 PATH → 执行 `moliai --version` 验证。
@@ -79,20 +79,20 @@ irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install-boot
 > **Windows PowerShell 中文乱码**：如遇中文输出乱码，先执行
 > `[Console]::OutputEncoding = [Text.Encoding]::UTF8`（只影响当前会话，无需改任何代码或配置）。
 
-可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.12`）、`MOLIAI_INSTALL_DIR`。
+可用环境变量覆盖：`MOLIAI_VERSION`（默认 `v0.10.13`）、`MOLIAI_INSTALL_DIR`。
 
 不想直接管道执行，可以先下载审查：
 
 ```bash
 # macOS / Linux
-curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.sh
+curl -fsSLO https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.sh
 less install.sh        # 看完再执行
 sh install.sh
 ```
 
 ```powershell
 # Windows
-irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.12/install.ps1 -OutFile install.ps1
+irm https://github.com/Mr-cjf/moliai-cli/releases/download/v0.10.13/install.ps1 -OutFile install.ps1
 notepad install.ps1    # 看完再执行
 .\install.ps1
 ```
@@ -828,8 +828,11 @@ moliai diagnose [canvasId] [--out report.json]
 |---|---|---|
 | `node list` | 列出节点（`--type` / `--name-like` / `--status` / `--group` / `--has-result` / `--no-has-result` / `--edit-mode` / `--model` / `--sort` / `--limit`，全部客户端过滤） | `moliai node list --type image --status completed` |
 | `node create` | 创建节点（`-t` 必填，`--x/--y` 必填；`-t super_resolution` 时 `--super-resolution-type` 必填；`--content` / `--edit-mode` / `--fit-mode` / `--prompt-preset` / `--layout-preset` / `--angle-preset` / `--auto-link` 可选） | `moliai node create "开场画面" -t image --x 0 --y 0` |
-| `node update` | 修改名称/坐标/文本/挂载素材/编辑模式/填充模式/超分类型/预设/自动链接，以及**生成参数**（`--model` / `-s, --set` / `--clear-params`）；带 `--where` 时批量改生成参数 | `moliai node update <nodeId> -s ratio=9:16` |
-| `node delete` | 删除节点：`<nodeId>` / `--where '<表达式>'` / `--ids a,b` **三选一**；`--dry-run` 预览，`--max-nodes` 控制选择器上限（**仅 `--where` 模式**，单节点模式传了会 `MOLIAI_ARG_INVALID`）；24 小时内可恢复 | `moliai node delete --where 'type=video&status=failed' --yes` |
+| `node update` | 修改名称/坐标/文本/挂载素材/编辑模式/填充模式/超分类型/预设/自动链接，以及**生成参数**（`--model` / `-s, --set` / `--clear-params`）；带 `--where` 时批量改生成参数（批量模式用 `--canvas` 指定画布） | `moliai node update <nodeId> -s ratio=9:16` |
+| `node delete` | 删除节点：`<nodeId>` / `--where '<表达式>'` / `--ids a,b` **三选一**；`--canvas <canvasId>` 指定画布（批量模式必须用它，位置参数会被当成 nodeId）；`--dry-run` 预览，`--max-nodes` 控制选择器上限（**仅 `--where` 模式**，单节点模式传了会 `MOLIAI_ARG_INVALID`）；24 小时内可恢复 | `moliai node delete --where 'type=video&status=failed' --yes` |
+| `node show` | 输出**单个节点的完整原始字段**（零裁剪，约 50 个字段）；`--connections` 额外附带与该节点相关的连线（变体形态） | `moliai node show <nodeId> --connections` |
+| `node duplicate` | 按画布真实 id 复制子图：`<nodeId...>` / `--ids a,b` / `--where '<表达式>'` 三选一；`--offset-x` / `--offset-y` **必填**；`--connections none\|internal\|incoming\|all`；`--dry-run` 预览 | `moliai node duplicate <nodeId> --offset-x 40 --offset-y 40` |
+| `node add-to-assets` | 把节点加入资产中心：`voice`/`audio` 走 `asset-exports`（幂等 + 轮询），`image`/`video`/`depth_capture`/`super_resolution(video)` 走 `quick-add` | `moliai node add-to-assets <nodeId> --folder <folderId>` |
 
 `node create` / `node update` 的字段说明：
 
@@ -1001,8 +1004,13 @@ moliai node update <nodeId> --name "新名" --x 200 --dry-run --diff
 | 选择器 | `moliai node delete --where 'type=video&status=failed' --yes` | 按表达式批量选中；命中 0 个报 `MOLIAI_ARG_INVALID`（不静默成功） |
 | id 列表 | `moliai node delete --ids id1,id2 --yes` | 逗号分隔，最多 200 个；本地不存在的 id 只进 `warnings` 并跳过 |
 
-> 批量模式不接受位置参数（画布请用 `MOLIAI_CANVAS` 环境变量或 `moliai canvas use` 绑定），
-> 否则第一个位置参数会被当成 nodeId 与 `--where` / `--ids` 冲突。
+> **画布怎么传**：`--canvas <canvasId>` > 位置参数 `canvasId` > `MOLIAI_CANVAS` > `moliai canvas use` 绑定。
+> 两个显式来源同时给出且不一致 → `MOLIAI_ARG_INVALID`（不静默取其一）；取值相同按同一画布处理。
+>
+> **批量模式必须用 `--canvas`**（`moliai node delete --ids id1,id2 --canvas <canvasId> --yes`）。
+> 批量模式写位置参数会被 commander 当成 `nodeId`，与 `--where` / `--ids` 冲突，
+> 报「三种目标方式只能选一种」——这不是 bug，位置参数只适合单节点写法 `node delete <nodeId> <canvasId>`。
+> `node update` 同理：`--where` 批量改参数时用 `--canvas` 指定画布。
 
 `--where` 表达式：`字段 运算符 值`，多个条件用 `&` 连接（**全部 AND**）；运算符只有 `=`（精确等于）与
 `~`（子串包含，忽略大小写）。值按**第一个**运算符切分后整体取值，因此 `ark::doubao-seedance-2.0`、
@@ -1025,6 +1033,7 @@ moliai node delete --where 'type=video&status=failed' --dry-run   # 先看会删
 moliai node delete --where 'name~镜头-&group=第01集' --yes
 moliai node delete --where 'model=ark::doubao-seedance-2.0' --yes
 moliai node delete --where 'hasResult=false' --max-nodes 5 --yes
+moliai node delete --ids id1,id2 --canvas <canvasId> --yes         # 批量删指定画布（画布用 --canvas）
 ```
 
 约束：
@@ -1034,6 +1043,124 @@ moliai node delete --where 'hasResult=false' --max-nodes 5 --yes
 - `--dry-run` 不提交删除、无需 `--yes`，但依然做语法解析、命中求值与名称解析
 - 输出结构：`{ dryRun, matched, deleted, deletionOperationId, nodes[{nodeId,name,nodeType}], restoreHint }`。
   **后端一次请求只返回一个 `deletionOperationId`（不提供逐节点 opId）**，恢复按整批执行，`restoreHint` 里给出恢复端点
+
+#### `node show`：单个节点的完整字段
+
+`node list` 给的是**12 字段精简视图**（`nodeId` / `name` / `nodeType` / `x` / `y` / `status` / `editMode` /
+`superResolutionType` / `mediaUrl` / `mediaId` / `mediaWidth` / `mediaHeight`）。需要 `content` / `modelKey` /
+`modelParams` / `capabilitySelections` / `voiceState` / `derivedFromNodeId` / `derivationType` / `sourceAssetType` /
+`synthesis` / `keywords` 这类字段时用 `node show`：
+
+```bash
+moliai node show <nodeId>                 # 输出 node（后端原始对象，约 50 个字段，零裁剪）
+moliai node show <nodeId> --connections   # 额外输出与该节点相关的连线（入线 + 出线）
+```
+
+- **零裁剪是刻意的**：CLI 不声明字段清单、不挑字段，后端加字段无需改 CLI。字段名用后端原名
+  （`posX` / `posY` 而不是 `x` / `y`；`nodeType` 而不是 `type`）
+- 只按 `nodeId` 精确查找，不支持名称或选择器；节点不存在 → `MOLIAI_NOT_FOUND`（不会返回空对象）
+- **`--connections` 是变体形态**：只有带该参数时输出才多一个顶层 `connections` 键
+  （`moliai schema "node show --connections"` 才有该字段）；不带时只有 `{ node }`
+- `--canvas` 省略时用 `MOLIAI_CANVAS` 或当前目录绑定
+- `text` 模式逐键一行打印（`键: 值`，嵌套对象/数组按单行 JSON 展开），不打印裸 JSON
+
+#### `node duplicate`：按画布真实 id 复制子图
+
+```bash
+# 1) 先预演：不发写请求，只给会创建什么
+moliai node duplicate <nodeId...> --offset-x 40 --offset-y 40 --dry-run
+
+# 2) 真复制（单节点 / 多节点）
+moliai node duplicate <nodeId> --offset-x 40 --offset-y 40
+moliai node duplicate <id1> <id2> --offset-x 40 --offset-y 40 --connections internal
+
+# 3) 按选择器批量（选择器语法见上一节）
+moliai node duplicate --where 'type=image&group=第01集' --offset-x 200 --offset-y 0 --max-nodes 10 --yes
+```
+
+| 参数 | 取值 | 说明 |
+|---|---|---|
+| `--offset-x <n>` / `--offset-y <n>` | 整数，可负 | **必填**。不偏移会让副本与原节点完全重叠（看起来像什么都没发生），所以 CLI 不提供默认值 |
+| `--connections <mode>` | `none`（默认）\| `internal` \| `incoming` \| `all` | 复制哪些连线（语义见下） |
+| `--action <mode>` | `duplicate`（默认）\| `clipboard_paste` | `clipboard_paste` 只允许副本**内部**连线，配 `incoming` / `all` 会本地报错 |
+| `--max-nodes <n>` / `--yes` | 整数 / 布尔 | **仅 `--where` 模式**；缺省上限 20，超限需 `--yes`（否则退出码 10） |
+| `--dry-run` | 布尔 | 只输出将提交的摘要，不发写请求 |
+| `--client-request-id <uuid>` | UUID | 幂等键（缺省自动生成 UUID v4；重试同一操作时复用以获得幂等回放） |
+
+连线模式语义：`none` 不复制连线；`internal` 只复制两端都在复制集合内的连线；`incoming` = internal + 外部→内部；
+`all` = incoming + 内部→外部。端点由 CLI 自动判定为 `new_node`（集合内，带 `clientNodeId`）或
+`existing_node`（集合外，带 `nodeId`）；`all` 模式下「内部→外部」出线强制 `manual`（后端硬规则），
+且出线的内部端点不能是派生节点（遇到会本地报错，建议改用 `incoming`）。
+
+约束与语义：
+
+- 三个入口**三选一**：位置参数 `<nodeId...>` / `--where` / `--ids a,b`（位置参数与 `--ids` 也互斥）
+- **副本名由后端追加「 - 副本」**（已经是副本名的不重复追加）；CLI 不改名
+- **媒体文件不复制**：副本只引用同一份媒体（`mediaUrl` / `mediaId` 指向原产物），不产生新文件
+- 派生关系自动带上：被复制节点有派生源时，**派生源必须一起复制**，否则本地报错（`MOLIAI_ARG_INVALID`），
+  避免副本指向集合外的源
+- 支持 **11 种**节点类型：`text` / `image` / `video` / `audio` / `super_resolution` / `panorama_image` /
+  `portrait_texture` / `three_view` / `nine_grid` / `video_synthesis` / `voice`；不支持的类型（如 `depth_capture`）
+  显式报 `MOLIAI_UNSUPPORTED`，不会发一个必然失败的请求。不复制编组（只复制节点与连线）
+- `nodeId` 不存在 → `MOLIAI_NOT_FOUND`；`--where` 命中 0 个 → `MOLIAI_ARG_INVALID`（不静默成功）
+- 输出 `{ operationId, canvasId, requested, offset, actionType, connectionsMode, nodeIdMap, createdNodeIds, createdConnectionCount }`：
+  `nodeIdMap` 是**源 nodeId → 新 nodeId**，可直接拿新 id 继续操作
+- `--dry-run` 用**变体形态**：同一结构 + `wouldCreate { nodes[], connections[] }`（节点只给
+  `clientNodeId` / `type` / `position`，连线只给端点与类型），此时 `operationId` 为 `null`、`nodeIdMap` 为空
+
+#### `node add-to-assets`：把节点加入资产中心
+
+后端有两套**互不兼容**的写入链路，命令按节点类型自动分流：
+
+| 节点类型 | 链路 | `assetType` |
+|---|---|---|
+| `voice` | `asset-exports`（新：单节点、幂等、可轮询） | `voice`（由节点类型决定，不能指定） |
+| `audio` | `asset-exports` | `audio`（同上） |
+| `image` | `quick-add`（旧：批量、无幂等） | `--asset-type` 指定 `character` / `location` / `item`；不传 = 只落自由创作 |
+| `video` / `depth_capture` / `super_resolution`（`superResolutionType=video`） | `quick-add` | `video`，或省略（只落自由创作） |
+| `super_resolution`（`image`）/ `text` / `panorama_image` / `portrait_texture` / `three_view` / `nine_grid` / `video_synthesis` | **不支持** | — |
+
+```bash
+# 链路 A（voice / audio）：--folder 必填（folderId 用 moliai folder list 查看）
+moliai node add-to-assets <voiceNodeId> --folder <folderId>
+moliai node add-to-assets <audioNodeId> --folder <folderId> --name "旁白-第01集" --description "第一集旁白"
+
+# 链路 B（image / video …）：--folder 可选，不传 = 未归档
+moliai node add-to-assets <imageNodeId> --asset-type character
+moliai node add-to-assets <videoNodeId> --folder <folderId> --asset-type video
+
+# 预演：链路 A 显示能力探测结果，链路 B 显示分组计划，都不发写请求
+moliai node add-to-assets <nodeId> --folder <folderId> --dry-run
+```
+
+| 参数 | 适用链路 | 说明 |
+|---|---|---|
+| `--folder <folderId>` | A **必填** / B 可选 | 链路 A 的 `folderId` 是必填字段（资产必须归档）；链路 B 不传表示**未归档**。批次同时含两类节点时按此规则分别判定。folderId 用 `moliai folder list` 查看（见「素材 → `folder list`」） |
+| `--asset-type <type>` | 仅 B | `character` / `location` / `item` / `video` / `audio`；**整批单值**且必须与节点媒体类型匹配（`character`/`location`/`item` → image 节点，`video` → video 类节点）；链路 A 的资产类型由节点类型决定，指定会报错 |
+| `--name <name>` | 仅 A | 且**只能单节点**；不传用能力探测返回的默认名（`sourceSummary.name`） |
+| `--description <text>` | 仅 A | ≤2000 码点；链路 B 没有描述字段 |
+| `--wait` / `--no-wait` | 仅 A | 提交后是否轮询到终态。默认轮询：1s / 2s / 3s / 4s / 5s 递增，最多 5 次；`--no-wait` 立即返回 `PROCESSING` |
+| `--poll-interval <sec>` | 仅 A | 轮询起始间隔（秒），之后每次 +1 秒 |
+| `--client-request-id <uuid>` | 仅 A | 且只能单节点；幂等键绑定 `(userId, nodeId, clientRequestId)` |
+| `--dry-run` | 都支持 | 链路 A 只做能力探测（只读 GET）；链路 B 只输出分组计划 |
+
+> `--name` / `--description` / `--client-request-id` 只对链路 A 有意义：批次里**同时含 quick-add 节点**时给这些参数
+> 会直接 `MOLIAI_ARG_INVALID`（避免「参数对一半节点生效」的误解），混批请拆成两次命令。
+
+**不支持的类型整批拒绝**：批次里只要有一个节点落在上表「不支持」行，命令直接报 `MOLIAI_UNSUPPORTED` 并列出
+`[{ nodeId, nodeType, reason }]`，**本次不发送任何写请求**（不做「部分成功」——那会让人以为只漏了一个）。
+
+输出与退出码：
+
+- 输出 `{ canvasId, requested, succeeded, failed, notAttempted, groups[] }`，逐组给出 `route` / `assetType` /
+  `nodeIds` / `ok` / `attempted` / `status` / `asset`（链路 A）/ `assets[]`（链路 B）/ `error`
+- `failed` = **确实发过写请求但失败**的节点数；`notAttempted` = 能力探测判定「当前不可导出」
+  （如 `MEDIA_NOT_READY`）而**没有发写请求**的节点数——两者不要混着汇报
+- **有失败组 → 退出码 6（`MOLIAI_TASK_FAILED`），但结果依然完整输出**（`ok: true` + 完整 `data`）。
+  不要因为看到 `ok: true` 就当成全部成功，要读 `failed` 与 `groups[].error`；成功部分不会回滚
+- `assetAction=EXISTS` 不是错误（该资产本来就在资产中心），只给 warning
+- **链路 B（quick-add）没有幂等键**：重复执行同一命令会**重复创建资产**。别拿它当「重试」用
+- 链路 B 单次最多 100 个节点（后端上限，超出本地先拒绝并提示分批）
 
 
 ### 连线
@@ -1953,6 +2080,7 @@ moliai task cancel --where 'type=video&status=failed' --yes
 | `download --task <taskId>` | 按任务下载（与节点参数二选一）：自动识别 `mediaUrl` / `videoUrl` / `imageUrl` / `audioUrl` / `storageKey` 等产物字段，视频 / 图片 / 音频生成任务都适用 | `moliai download --task <taskId> -o ./out` |
 | `download --watermark-text <文本>` | 下载后**本地**叠加文字水印（需 ffmpeg） | `moliai download <nodeId> --watermark-text "© 我的水印"` |
 | `download --watermark-image <路径>` | 下载后**本地**叠加图片水印（需 ffmpeg） | `moliai download <nodeId> --watermark-image ./logo.png` |
+| `folder list` | 列出资产夹（资产中心文件夹），拿到 `node add-to-assets --folder` 需要的 `folderId`；默认按层级缩进成树 | `moliai folder list` |
 
 > `download` 的选项只有：`--task <taskId>`、`-o/--out <dir>`、`--force`，以及四个水印选项（`--watermark-text` / `--watermark-image` / `--watermark-position` / `--watermark-opacity`）。画布走位置参数或 `MOLIAI_CANVAS`/目录绑定（没有 `--canvasId`）；输出目录用 `-o/--out`（没有 `--output <dir>`）；水印字号与颜色固定（没有 `--watermark-fontsize` / `--watermark-color`）。
 >
@@ -1968,6 +2096,45 @@ moliai task cancel --where 'type=video&status=failed' --yes
 - **水印参数在发起下载之前校验**：图片是否存在且是图片格式、本机 ffmpeg 是否可用，任一不满足立刻报错，**不发请求、不产生任何文件**
 - 水印是下载**之后**用本机 ffmpeg 处理（服务端不参与，因此需要本机 ffmpeg，见「本地依赖：ffmpeg」）；处理本身失败时会**删除刚下载的文件**再报错，不会留下一个看起来「已加水印」的产物
 - Windows 上文字水印会自动挑选系统中常见的字体文件传给 ffmpeg；都不存在时不传 `fontfile`（由 ffmpeg 自行解析，通常直接报错，不会静默产出无水印文件）
+
+#### `folder list`：列资产夹（拿 `--folder` 需要的 folderId）
+
+`node add-to-assets` 的 voice / audio 链路（asset-exports）**必须**传 `--folder <folderId>`，
+这个命令就是拿到 folderId 的入口：
+
+```bash
+moliai folder list                  # 默认按层级缩进成树
+moliai folder list --flat           # 不缩进，按 sortOrder + 名称平铺
+moliai folder list --show-deleted   # 连同已删除的夹一起列出
+```
+
+调用 `GET /api/asset-hub/folders`，输出：
+
+```json
+{
+  "folders": [
+    { "id": "fld-1", "name": "默认资产", "parentId": null, "depth": 0, "sortOrder": 0 }
+  ],
+  "count": 1,
+  "truncated": false
+}
+```
+
+- 每条只给 5 个字段：`id` / `name` / `parentId` / `depth` / `sortOrder`。`userId` / `deletedAt` / 时间戳
+  **不透传**——这条命令的用途就是拿到 folderId，多余字段只会让输出难读
+- 默认过滤掉已删除的夹（`deletedAt` 非空）；`--show-deleted` 才包含。已删除标记**只出现在 `--output text`**
+  的行尾 `(已删除)`，JSON 里不会因此多出键
+- `truncated` 恒为 `false`：该接口一次返回账号下全部资产夹（没有分页参数），CLI 也不截断；
+  保留该键只为与其它 list 命令的输出形状一致
+- 排序：`--flat` 时 `sortOrder` 升序、同值按名称（码点比较，不随机器区域设置漂移）；默认树形按 `parentId` 还原，
+  父夹已被过滤掉时它的子夹按根处理——只影响缩进，不丢条目
+- `parentId` 为 `null` 的是根夹
+
+> ⚠️ **懒创建说明每次都给，不是「首次提示」，也不是「刚刚创建了」**：该接口在账号下**没有任何资产夹**时会自动创建
+> 「默认资产」根夹——即一次「列目录」也可能写库。这是后端行为，CLI 不隐藏也不假装没发生，
+> 因此**每次非空输出都带**同一条条件式说明：
+> `该接口仅在账号下没有任何资产夹时自动创建「默认资产」根夹（后端行为）；本次只做查询，若你已有资产夹则不会发生写入`。
+> 空列表（理论上不会出现）不带这条说明。它不是错误，也不会改变退出码。
 
 ### 生成
 
